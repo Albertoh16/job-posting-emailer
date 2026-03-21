@@ -12,6 +12,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    environment: Albert 
     steps:
       - uses: actions/checkout@v3
 
