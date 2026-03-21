@@ -11,7 +11,8 @@ def formatEmail(jobs):
     result = "<ul>"
 
     for job in jobs.keys():
-        result += f"<h2><b>{job} ({", ".join(jobs[job][0][4])})</b></h2>"
+        industry = ", ".join(jobs[job][0][4])
+        result += f"<h2><b>{job} ({industry})</b></h2>"
         
         for title, link, loc, model, _, time in jobs[job]:
             indent = "&nbsp;&nbsp;" * 6
