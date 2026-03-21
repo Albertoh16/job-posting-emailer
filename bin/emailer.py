@@ -37,7 +37,9 @@ def sendEmail(jobs):
     sixHoursAgo = today - timedelta(hours=6)
     timeRange = f"({sixHoursAgo.strftime('%-I:%M%p')} - {today.strftime('%-I:%M%p')})"
 
-    msg["Subject"] = f"{today.strftime("%m/%d/%Y")} {timeRange} Job Postings"
+    dateStr = today.strftime("%m/%d/%Y")
+    
+    msg["Subject"] = f"{dateStr} {timeRange} Job Postings" 
     msg["From"] = "jobnotifier.bot@gmail.com"
     msg["To"] = os.getenv("EMAIL")
 
