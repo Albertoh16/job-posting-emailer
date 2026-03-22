@@ -17,29 +17,23 @@ def getBrowser(playwright):
 
 # This automatically navigates to jobright and logs into the pre-made account.
 def loginToJobright(page, email, password):
-    print(f"[DEBUG] Navigating to https://jobright.ai/...")
     page.goto("https://jobright.ai/")
-    print(f"[DEBUG] Current URL after goto: {page.url}")
+    page.wait_for_load_state("networkidle")
 
-    print("[DEBUG] Waiting for SIGN IN button...")
+    # Click SIGN IN to open the modal
     page.wait_for_selector("text=SIGN IN", timeout=10000)
-    print("[DEBUG] Clicking SIGN IN button...")
     page.click("text=SIGN IN")
 
-    print("[DEBUG] Waiting for email input in modal...")
-    page.wait_for_selector("input[type='email'], input[name='email']", timeout=10000)
-    print("[DEBUG] Filling email...")
-    page.fill("input[type='email'], input[name='email']", email)
+    # Use placeholder-based selectors (no type='email' or name on these inputs)
+    page.wait_for_selector("input[placeholder='Email']", timeout=10000)
+    page.fill("input[placeholder='Email']", email)
+    page.fill("input[placeholder='Password']", password)
 
-    print("[DEBUG] Filling password...")
-    page.fill("input[type='password']", password)
+    # Click the SIGN IN button inside the modal
+    page.click(".ant-modal-content button[type='submit'], .ant-modal-content .ant-btn-primary, #sign-in-content button:has-text('SIGN IN')")
 
-    print("[DEBUG] Clicking submit...")
-    page.click("button[type='submit']")
-
-    print("[DEBUG] Waiting for redirect after login...")
+    # Wait for redirect after login
     page.wait_for_url(lambda url: "jobright.ai" in url and url != "https://jobright.ai/", timeout=15000)
-    print(f"[DEBUG] Login successful! Current URL: {page.url}")
     time.sleep(2)
 
 
