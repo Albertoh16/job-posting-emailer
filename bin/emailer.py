@@ -47,5 +47,5 @@ def sendEmail(jobs):
     msg["To"] = os.getenv("EMAIL")
 
     with smtplib.SMTP_SSL(("smtp.gmail.com"), 465) as server:
-        server.login("jobnotifier.bot", os.getenv("PASSWORD"))
+        server.login("jobnotifier.bot", os.getenv("NOTIFIER_EMAIL_PASSWORD"))
         server.sendmail("jobnotifier.bot", os.getenv("EMAIL"), msg.as_string())
