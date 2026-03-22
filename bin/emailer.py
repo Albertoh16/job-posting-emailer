@@ -26,26 +26,24 @@ def formatEmail(jobs):
     return result
 
 # We then send our formatted html to our email using the email in the env.
-def sendEmail(jobs):
+def sendEmail(jobs, runTime):
     # We don't send any email if there is nothing to send.
     if not jobs:
         return
-    
-    today = datetime.now(tz=timezone.utc) - timedelta(hours=4)
 
     body = formatEmail(jobs)
 
     msg = MIMEText(body, "html")
 
-    sixHoursAgo = today - timedelta(hours=6)
-    timeRange = f"({sixHoursAgo.strftime('%-I:%M%p')} - {today.strftime('%-I:%M%p')})"
-
-    dateStr = today.strftime("%m/%d/%Y")
+    runTimeEDT = runTime - timedelta(hours=4)
+    sixHoursAgo = runTimeEDT - timedelta(hours=6)
+    timeRange = f"({sixHoursAgo.strftime('%-I:%M%p')} - {runTimeEDT.strftime('%-I:%M%p')})"
+    dateStr = runTimeEDT.strftime("%m/%d/%Y")
 
     msg["Subject"] = f"{dateStr} {timeRange} Job Postings" 
     msg["From"] = "jobnotifier.bot@gmail.com"
     msg["To"] = os.getenv("EMAIL")
 
     with smtplib.SMTP_SSL(("smtp.gmail.com"), 465) as server:
-        server.login("jobnotifier.bot", os.getenv("NOTIFIER_EMAIL_PASSWORD"))
-        server.sendmail("jobnotifier.bot", os.getenv("EMAIL"), msg.as_string())
+        server.login("jobnotifier.bot@gmail.com", os.getenv("PASSWORD"))
+        server.sendmail("jobnotifier.bot@gmail.com", os.getenv("EMAIL"), msg.as_string())

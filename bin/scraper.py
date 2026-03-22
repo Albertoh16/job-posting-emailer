@@ -1,7 +1,7 @@
 from playwright.sync_api import sync_playwright
 from config import FILTERS
 from emailer import sendEmail
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # We convert the millisecond timestamp to a UTC date and 
 # time, then we only accept posts from the last 6 hours.
@@ -32,6 +32,8 @@ def validJob(job):
     hasIndustry = any(word.lower() in jobIndustry for word in FILTERS["industry"]) if FILTERS["industry"] else True
 
     return hasPosition and hasRole and hasqualification and hasIndustry
+
+initialTime = datetime.now(tz=timezone.utc)
 
 # Creates an enviornment to utilize browser capabilities.
 with sync_playwright() as p:
@@ -117,4 +119,4 @@ for company in newJobs:
     newJobs[company].sort(key=lambda x: x[5], reverse=True)
 
 # We then format and send our most to least recent sorted job list to an email.
-sendEmail(dict(sorted(newJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)))
+sendEmail(dict(sorted(newJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)), initialTime)
