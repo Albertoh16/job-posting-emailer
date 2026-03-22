@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 from config import FILTERS
 from emailer import sendEmail
+from linkFetcher import skipJobrightPage
 from datetime import datetime, timedelta, timezone
 
 # We convert the millisecond timestamp to a UTC date and 
@@ -134,6 +135,9 @@ for job in jobs:
 # We sort the jobs within each company
 for company in newJobs:
     newJobs[company].sort(key=lambda x: x[5], reverse=True)
+
+# We'll then fetch the real links from all the jobright postings.
+newJobs = skipJobrightPage(newJobs)
 
 # We then format and send our most to least recent sorted job list to an email.
 sendEmail(dict(sorted(newJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)), initialTime)
