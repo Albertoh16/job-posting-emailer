@@ -19,7 +19,7 @@ def formatEmail(jobs):
         
         for title, link, loc, model, _, time in jobs[job]:
             indent = "&nbsp;&nbsp;" * 6
-            timeRange = f"({sixHoursAgo.strftime('%-I:00%p')} - {runTimeEDT.strftime('%-I:00%p')})"
+            postTime = (datetime.fromtimestamp(time / 1000, tz=timezone.utc) + timedelta(hours=3)).strftime('%-I:%M%p')
             result += f'<p>{indent}<span style="font-size:16px">{postTime} | </span> <a href="{link}">{title} | {loc} | {model}</a></p>'
     result += "</ul>"
 
@@ -43,7 +43,7 @@ def sendEmail(jobs, runTime):
 
     runTimeEDT = runTime - timedelta(hours=4)
     sixHoursAgo = runTimeEDT - timedelta(hours=6)
-    timeRange = f"({sixHoursAgo.strftime('%-I:%M%p')} - {runTimeEDT.strftime('%-I:%M%p')})"
+    timeRange = f"({sixHoursAgo.strftime('%-I:00%p')} - {runTimeEDT.strftime('%-I:00%p')})"
     dateStr = runTimeEDT.strftime("%m/%d/%Y")
 
     msg["Subject"] = f"{dateStr} {timeRange} Job Postings" 
