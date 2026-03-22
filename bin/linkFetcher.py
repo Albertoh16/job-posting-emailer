@@ -20,20 +20,16 @@ def loginToJobright(page, email, password):
     page.goto("https://jobright.ai/")
     page.wait_for_load_state("networkidle")
 
-    # Click SIGN IN to open the modal
     page.wait_for_selector("text=SIGN IN", timeout=10000)
     page.click("text=SIGN IN")
 
-    # Use placeholder-based selectors (no type='email' or name on these inputs)
     page.wait_for_selector("input[placeholder='Email']", timeout=10000)
     page.fill("input[placeholder='Email']", email)
     page.fill("input[placeholder='Password']", password)
 
-    # Click the SIGN IN button inside the modal
-    page.click(".ant-modal-content button[type='submit'], .ant-modal-content .ant-btn-primary, #sign-in-content button:has-text('SIGN IN')")
+    page.click("#sign-in-content button:has-text('SIGN IN')")
 
-    # Wait for redirect after login
-    page.wait_for_url(lambda url: "jobright.ai" in url and url != "https://jobright.ai/", timeout=15000)
+    page.wait_for_selector(".ant-modal-content", state="hidden", timeout=15000)
     time.sleep(2)
 
 
