@@ -46,7 +46,7 @@ def sendEmail(jobs, runTime):
     dateStr = runTimeEDT.strftime("%m/%d/%Y")
 
     resend.Emails.send({
-        "from": "Job Notifier <onboarding@resend.dev>",
+        "from": "Job Notifier <notifier@provysionstudios.com>",
         "to": os.getenv("EMAIL"),
         "subject": f"{dateStr} {timeRange} Job Postings",
         "html": body,
