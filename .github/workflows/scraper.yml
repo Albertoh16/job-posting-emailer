@@ -21,11 +21,29 @@ jobs:
         with:
           python-version: '3.11'
 
+     # We'll cache our dependanxies to stop our action from taking too long to complete.
+      - name: Cache pip dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      # We also cache our browsers so our actions run faster.
+      - name: Cache Playwright browsers
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
+
       - name: Install dependencies
         run: |
-          pip install playwright python-dotenv
-          playwright install chromium
+          pip install playwright python-dotenv resend
           playwright install-deps chromium
+          if [ ! -d ~/.cache/ms-playwright ]; then
+            playwright install chromium
+          fi
 
       - name: Run scraper
         env:
