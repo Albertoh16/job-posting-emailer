@@ -309,8 +309,6 @@
   const SUPABASE_URL    = "https://wftqtjuwfhlaiwkakptw.supabase.co";
   const SUPABASE_ANON   = "sb_publishable__JjwYt3ShAcGxYcFM7XpQQ_P1OzX_vw";
   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6xtpvHLM1lj70TYz4-5jWlo3Yd9rr6R2GPIAse2Of4c5TMKk0T4teXQSCWnZEuo6J/exec";
-  
-  // ─────────────────────────────────────────────
 
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -339,7 +337,7 @@
     if (error) {
       showToast('Error: ' + error.message, 'error');
       btn.disabled = false;
-      btn.textContent = 'Send magic link';
+      btn.textContent = 'Send link';
       return;
     }
 
@@ -357,7 +355,7 @@
     document.getElementById('form-panel').style.display = 'none';
     document.getElementById('email-input').value = '';
     document.getElementById('send-btn').disabled = false;
-    document.getElementById('send-btn').textContent = 'Send magic link';
+    document.getElementById('send-btn').textContent = 'Send link';
   }
 
   function onLoggedIn(email) {
@@ -413,16 +411,18 @@
     setLoading(false);
   }
 
+  // Uses no-cors since Apps Script doesn't support CORS headers.
+  // This means we can't read the response, so we assume success if no error is thrown.
   async function saveRow() {
     document.getElementById('btn-save').disabled = true;
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
+      await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        mode: 'no-cors',
         body: JSON.stringify({ action: 'save', data: getFormData() }),
       });
-      const json = await res.json();
-      if (json.success) { showToast('Preferences saved!', 'success'); showBadge('saved'); }
-      else throw new Error();
+      showToast('Preferences saved!', 'success');
+      showBadge('saved');
     } catch { showToast('Failed to save', 'error'); }
     document.getElementById('btn-save').disabled = false;
   }
@@ -431,13 +431,14 @@
     if (!confirm('Delete all your preference data? This cannot be undone.')) return;
     document.getElementById('btn-delete').disabled = true;
     try {
-      const res = await fetch(APPS_SCRIPT_URL, {
+      await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
+        mode: 'no-cors',
         body: JSON.stringify({ action: 'delete', email: currentEmail }),
       });
-      const json = await res.json();
-      if (json.success) { clearForm(); showToast('Data deleted', 'success'); showBadge('deleted'); }
-      else throw new Error();
+      clearForm();
+      showToast('Data deleted', 'success');
+      showBadge('deleted');
     } catch { showToast('Failed to delete', 'error'); }
     document.getElementById('btn-delete').disabled = false;
   }
@@ -456,7 +457,6 @@
     b.style.display = 'inline-block';
     setTimeout(() => b.style.display = 'none', 3000);
   }
-
 </script>
 </body>
 </html>
