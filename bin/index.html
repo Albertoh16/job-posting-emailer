@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Preferences</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f10;
+      --surface: #1a1a1d;
+      --border: #2a2a2e;
+      --accent: #6ee7b7;
+      --accent-dim: #1a3d30;
+      --text: #e8e8ea;
+      --muted: #6b6b72;
+      --danger: #f87171;
+      --danger-dim: #3b1515;
+      --radius: 10px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 40% at 70% 10%, #0d3d2a44 0%, transparent 70%),
+                  radial-gradient(ellipse 40% 30% at 10% 80%, #1a1a3a44 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container { position: relative; z-index: 1; width: 100%; max-width: 680px; }
+
+    header { margin-bottom: 2.5rem; }
+    .logo {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--accent);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; }
+    h1 span { color: var(--accent); }
+    .subtitle { margin-top: 0.4rem; font-size: 0.9rem; color: var(--muted); }
+
+    .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+
+    /* Auth */
+    #auth-panel { padding: 2.5rem; text-align: center; }
+    #auth-panel p { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+    #magic-panel { padding: 2.5rem; text-align: center; display: none; }
+    #magic-panel .icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    #magic-panel h3 { font-size: 1.1rem; font-weight: 500; margin-bottom: 0.5rem; }
+    #magic-panel p { color: var(--muted); font-size: 0.875rem; }
+    #magic-panel .email-sent { color: var(--accent); font-family: 'DM Mono', monospace; font-size: 0.85rem; margin-top: 0.5rem; }
+
+    .email-form { display: flex; flex-direction: column; gap: 0.75rem; max-width: 340px; margin: 0 auto; }
+    .email-form input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.65rem 0.9rem;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .email-form input:focus { outline: none; border-color: var(--accent); }
+    .email-form input::placeholder { color: var(--muted); opacity: 0.6; }
+
+    .btn {
+      border: none; border-radius: 7px; padding: 0.6rem 1.4rem;
+      font-size: 0.875rem; font-weight: 500; cursor: pointer;
+      font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+    }
+    .btn-accent { background: var(--accent); color: #0a1f17; width: 100%; }
+    .btn-accent:hover { filter: brightness(1.1); }
+    .btn-accent:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-save { background: var(--accent); color: #0a1f17; flex: 1; }
+    .btn-save:hover { filter: brightness(1.1); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-delete { background: var(--danger-dim); color: var(--danger); border: 1px solid #5a2020; }
+    .btn-delete:hover { background: #5a1f1f; }
+    .btn-delete:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* User bar */
+    #user-bar {
+      display: none; align-items: center; justify-content: space-between;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 0.8rem 1.2rem;
+      margin-bottom: 1.5rem; font-size: 0.85rem;
+    }
+    .user-info { display: flex; align-items: center; gap: 0.6rem; }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--accent-dim); border: 1px solid var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; color: var(--accent);
+      font-family: 'DM Mono', monospace; font-weight: 500;
+    }
+    .user-email { color: var(--muted); }
+    .sign-out-btn {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 6px; padding: 0.3rem 0.8rem; font-size: 0.8rem;
+      cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+    }
+    .sign-out-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* Form */
+    #form-panel { display: none; }
+    .form-header {
+      padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .form-header h2 { font-size: 0.95rem; font-weight: 500; }
+    .status-badge {
+      font-family: 'DM Mono', monospace; font-size: 0.7rem;
+      padding: 0.2rem 0.6rem; border-radius: 20px;
+      background: var(--accent-dim); color: var(--accent); display: none;
+    }
+    .form-body { padding: 1.5rem; }
+    .section-label {
+      font-family: 'DM Mono', monospace; font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--muted); margin: 1.5rem 0 0.8rem;
+    }
+    .section-label:first-child { margin-top: 0; }
+    .field-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .field { display: flex; flex-direction: column; gap: 0.35rem; }
+    label { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+    label .tag {
+      display: inline-block; margin-left: 0.4rem; font-size: 0.65rem;
+      padding: 0.1rem 0.4rem; border-radius: 4px; font-family: 'DM Mono', monospace;
+    }
+    label .include-tag { background: var(--accent-dim); color: var(--accent); }
+    label .exclude-tag { background: var(--danger-dim); color: var(--danger); }
+    input[type="text"] {
+      background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
+      padding: 0.55rem 0.8rem; color: var(--text); font-size: 0.875rem;
+      font-family: 'DM Sans', sans-serif; transition: border-color 0.2s; width: 100%;
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--accent); }
+    input[type="text"]::placeholder { color: var(--muted); opacity: 0.6; }
+    .hint { font-size: 0.72rem; color: var(--muted); opacity: 0.7; font-family: 'DM Mono', monospace; }
+    .form-footer {
+      padding: 1.2rem 1.5rem; border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    }
+
+    /* Loading */
+    .loading-row {
+      text-align: center; padding: 2rem; color: var(--muted);
+      font-size: 0.85rem; font-family: 'DM Mono', monospace; display: none;
+    }
+    .dot { animation: blink 1.2s infinite; display: inline-block; }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.75rem 1.1rem; font-size: 0.85rem;
+      display: none; align-items: center; gap: 0.5rem; z-index: 100;
+      box-shadow: 0 8px 30px #00000066; animation: slideIn 0.25s ease;
+    }
+    @keyframes slideIn { from{transform:translateY(10px);opacity:0} to{transform:translateY(0);opacity:1} }
+    #toast.success { border-color: var(--accent); color: var(--accent); }
+    #toast.error   { border-color: var(--danger); color: var(--danger); }
+
+    @media (max-width: 500px) { .field-pair { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Job Notifier Portal</div>
+    <h1>Your <span>Filter</span> Settings</h1>
+    <p class="subtitle">Manage your position, role, and industry preferences.</p>
+  </header>
+
+  <!-- Enter email -->
+  <div id="auth-panel" class="panel">
+    <p>Enter your email to receive access in your inbox.</p>
+    <div class="email-form">
+      <input type="email" id="email-input" placeholder="you@example.com" />
+      <button class="btn btn-accent" id="send-btn" onclick="sendMagicLink()">Send link</button>
+    </div>
+  </div>
+
+  <!-- Check email message -->
+  <div id="magic-panel" class="panel">
+    <div class="icon">✉️</div>
+    <h3>Check your inbox!</h3>
+    <p>Link sent to</p>
+    <p class="email-sent" id="sent-to"></p>
+    <p style="margin-top:0.75rem;">Click the link in the email to continue. It expires in 1 hour.</p>
+  </div>
+
+  <!-- User bar -->
+  <div id="user-bar">
+    <div class="user-info">
+      <div class="user-avatar" id="avatar-initials">--</div>
+      <span class="user-email" id="user-email-display"></span>
+    </div>
+    <button class="sign-out-btn" onclick="signOut()">Sign out</button>
+  </div>
+
+  <!-- Filter -->
+  <div id="form-panel" class="panel">
+    <div class="form-header">
+      <h2>Your Preferences</h2>
+      <span class="status-badge" id="status-badge">saved</span>
+    </div>
+    <div class="loading-row" id="loading-row">
+      Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
+    </div>
+    <div class="form-body" id="form-body">
+      <div class="section-label">Position</div>
+      <div class="field-pair">
+        <div class="field">
+          <label>Position <span class="tag include-tag">include</span></label>
+          <input type="text" id="f-position" placeholder="e.g. Manager, Director" />
+        </div>
+        <div class="field">
+          <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
+          <input type="text" id="f-exclude-position" placeholder="e.g. Intern" />
+        </div>
+      </div>
+
+      <div class="section-label">Role</div>
+      <div class="field-pair">
+        <div class="field">
+          <label>Role <span class="tag include-tag">include</span></label>
+          <input type="text" id="f-role" placeholder="e.g. Admin, Editor" />
+        </div>
+        <div class="field">
+          <label>Exclude Role <span class="tag exclude-tag">exclude</span></label>
+          <input type="text" id="f-exclude-role" placeholder="e.g. Viewer" />
+        </div>
+      </div>
+
+      <div class="section-label">Specialization</div>
+      <div class="field-pair">
+        <div class="field">
+          <label>Specialization <span class="tag include-tag">include</span></label>
+          <input type="text" id="f-specialization" placeholder="e.g. Frontend, Backend" />
+        </div>
+        <div class="field">
+          <label>Exclude Specialization <span class="tag exclude-tag">exclude</span></label>
+          <input type="text" id="f-exclude-specialization" placeholder="e.g. QA" />
+        </div>
+      </div>
+
+      <div class="section-label">Qualification</div>
+      <div class="field-pair">
+        <div class="field">
+          <label>Qualification <span class="tag include-tag">include</span></label>
+          <input type="text" id="f-qualification" placeholder="e.g. Bachelor, Master" />
+        </div>
+        <div class="field">
+          <label>Exclude Qualification <span class="tag exclude-tag">exclude</span></label>
+          <input type="text" id="f-exclude-qualification" placeholder="e.g. PhD" />
+        </div>
+      </div>
+
+      <div class="section-label">Industry</div>
+      <div class="field-pair">
+        <div class="field">
+          <label>Industry <span class="tag include-tag">include</span></label>
+          <input type="text" id="f-industry" placeholder="e.g. Tech, Finance" />
+        </div>
+        <div class="field">
+          <label>Exclude Industry <span class="tag exclude-tag">exclude</span></label>
+          <input type="text" id="f-exclude-industry" placeholder="e.g. Gaming" />
+        </div>
+      </div>
+      <p class="hint" style="margin-top:1rem;">Separate multiple values with commas.</p>
+    </div>
+    <div class="form-footer">
+      <button class="btn btn-delete" id="btn-delete" onclick="deleteRow()">Delete my data</button>
+      <button class="btn btn-save"   id="btn-save"   onclick="saveRow()">Save preferences</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const SUPABASE_URL    = "https://wftqtjuwfhlaiwkakptw.supabase.co";
+  const SUPABASE_ANON   = "sb_publishable__JjwYt3ShAcGxYcFM7XpQQ_P1OzX_vw";
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6xtpvHLM1lj70TYz4-5jWlo3Yd9rr6R2GPIAse2Of4c5TMKk0T4teXQSCWnZEuo6J/exec";
+  
+  // ─────────────────────────────────────────────
+
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+  let currentEmail = null;
+
+  // Checks if returning from magic link click
+  window.addEventListener('load', async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) onLoggedIn(session.user.email);
+  });
+
+  async function sendMagicLink() {
+    const email = document.getElementById('email-input').value.trim();
+    if (!email) return showToast('Please enter your email', 'error');
+
+    const btn = document.getElementById('send-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+
+    const { error } = await sb.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.href }
+    });
+
+    if (error) {
+      showToast('Error: ' + error.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Send magic link';
+      return;
+    }
+
+    document.getElementById('auth-panel').style.display = 'none';
+    document.getElementById('magic-panel').style.display = 'block';
+    document.getElementById('sent-to').textContent = email;
+  }
+
+  async function signOut() {
+    await sb.auth.signOut();
+    currentEmail = null;
+    document.getElementById('auth-panel').style.display = 'block';
+    document.getElementById('magic-panel').style.display = 'none';
+    document.getElementById('user-bar').style.display = 'none';
+    document.getElementById('form-panel').style.display = 'none';
+    document.getElementById('email-input').value = '';
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('send-btn').textContent = 'Send magic link';
+  }
+
+  function onLoggedIn(email) {
+    currentEmail = email;
+    document.getElementById('auth-panel').style.display = 'none';
+    document.getElementById('magic-panel').style.display = 'none';
+    document.getElementById('user-bar').style.display = 'flex';
+    document.getElementById('form-panel').style.display = 'block';
+    document.getElementById('user-email-display').textContent = email;
+    document.getElementById('avatar-initials').textContent = email.slice(0, 2).toUpperCase();
+    loadRow();
+  }
+
+  const FIELDS = [
+    'position', 'exclude-position',
+    'role', 'exclude-role',
+    'specialization', 'exclude-specialization',
+    'qualification', 'exclude-qualification',
+    'industry', 'exclude-industry'
+  ];
+
+  function getFormData() {
+    const data = { email: currentEmail };
+    FIELDS.forEach(f => data[f] = document.getElementById('f-' + f).value.trim());
+    return data;
+  }
+
+  function setFormData(row) {
+    FIELDS.forEach((f, i) => {
+      document.getElementById('f-' + f).value = row[i + 1] || '';
+    });
+  }
+
+  function clearForm() {
+    FIELDS.forEach(f => document.getElementById('f-' + f).value = '');
+  }
+
+  function setLoading(on) {
+    document.getElementById('loading-row').style.display = on ? 'block' : 'none';
+    document.getElementById('form-body').style.display = on ? 'none' : 'block';
+    document.getElementById('btn-save').disabled = on;
+    document.getElementById('btn-delete').disabled = on;
+  }
+
+  async function loadRow() {
+    setLoading(true);
+    try {
+      const res = await fetch(`${APPS_SCRIPT_URL}?action=get&email=${encodeURIComponent(currentEmail)}`);
+      const json = await res.json();
+      if (json.row) setFormData(json.row);
+      else clearForm();
+    } catch { showToast('Failed to load data', 'error'); }
+    setLoading(false);
+  }
+
+  async function saveRow() {
+    document.getElementById('btn-save').disabled = true;
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'save', data: getFormData() }),
+      });
+      const json = await res.json();
+      if (json.success) { showToast('Preferences saved!', 'success'); showBadge('saved'); }
+      else throw new Error();
+    } catch { showToast('Failed to save', 'error'); }
+    document.getElementById('btn-save').disabled = false;
+  }
+
+  async function deleteRow() {
+    if (!confirm('Delete all your preference data? This cannot be undone.')) return;
+    document.getElementById('btn-delete').disabled = true;
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'delete', email: currentEmail }),
+      });
+      const json = await res.json();
+      if (json.success) { clearForm(); showToast('Data deleted', 'success'); showBadge('deleted'); }
+      else throw new Error();
+    } catch { showToast('Failed to delete', 'error'); }
+    document.getElementById('btn-delete').disabled = false;
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.getElementById('toast');
+    t.textContent = (type === 'success' ? '✓ ' : '✗ ') + msg;
+    t.className = type;
+    t.style.display = 'flex';
+    setTimeout(() => t.style.display = 'none', 3000);
+  }
+
+  function showBadge(text) {
+    const b = document.getElementById('status-badge');
+    b.textContent = text;
+    b.style.display = 'inline-block';
+    setTimeout(() => b.style.display = 'none', 3000);
+  }
+
+</script>
+</body>
+</html>
