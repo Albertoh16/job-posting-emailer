@@ -1,66 +1,64 @@
 from playwright.sync_api import sync_playwright
-from config import USERS
+from config import FILTERS
 from emailer import sendEmail
 from linkFetcher import skipJobrightPage
 from datetime import datetime, timedelta, timezone
 
-# We convert the millisecond timestamp to a UTC date and
+# We convert the millisecond timestamp to a UTC date and 
 # time, then we only accept posts from the last 6 hours.
 def withinTimeLimit(time):
     posted = datetime.fromtimestamp(time / 1000)
     now = datetime.now()
     return (now - posted) <= timedelta(hours=13)
 
-# We only take in jobs that are applicable to a given user's filters.
-def validJob(job, filters):
-    # If the user has no filters, they get all jobs.
-    if not filters:
+# We only take in jobs that are applicable to our customized filter.
+def validJob(job):
+    # If we have no filters, we take any job we find.
+    if not FILTERS:
         return True
-
+    
     jobTitle = job["title"].lower()
     jobIndustry = ", ".join(job["industry"]).lower()
     jobQualifications = job["qualifications"].lower()
 
     # We check each field against its specific exclude list.
-    if filters.get("exclude position"):
-        if any(word.lower() in jobTitle for word in filters["exclude position"]):
+    if FILTERS.get("exclude position"):
+        if any(word.lower() in jobTitle for word in FILTERS["exclude position"]):
             return False
 
-    if filters.get("exclude role"):
-        if any(word.lower() in jobTitle for word in filters["exclude role"]):
+    if FILTERS.get("exclude role"):
+        if any(word.lower() in jobTitle for word in FILTERS["exclude role"]):
             return False
 
-    if filters.get("exclude specialization"):
-        if any(word.lower() in jobTitle for word in filters["exclude specialization"]):
+    if FILTERS.get("exclude specialization"):
+        if any(word.lower() in jobTitle for word in FILTERS["exclude specialization"]):
             return False
 
-    if filters.get("exclude qualification"):
-        if any(word.lower() in jobQualifications for word in filters["exclude qualification"]):
+    if FILTERS.get("exclude qualification"):
+        if any(word.lower() in jobQualifications for word in FILTERS["exclude qualification"]):
             return False
 
-    if filters.get("exclude industry"):
-        if any(word.lower() in jobIndustry for word in filters["exclude industry"]):
+    if FILTERS.get("exclude industry"):
+        if any(word.lower() in jobIndustry for word in FILTERS["exclude industry"]):
             return False
 
-    # Returns true for each filter that is empty (no restriction).
-    hasPosition = any(word.lower() in jobTitle for word in filters["position"]) if filters["position"] else True
-    hasRole = any(word.lower() in jobTitle for word in filters["role"]) if filters["role"] else True
-    hasSpecialization = any(word.lower() in jobTitle for word in filters["specialization"]) if filters["specialization"] else True
-    hasQualification = any(word.lower() in jobQualifications for word in filters["qualification"]) if filters["qualification"] else True
-    hasIndustry = any(word.lower() in jobIndustry for word in filters["industry"]) if filters["industry"] else True
+    # We check if we find our keywords in the job title, also will return true for each filter that is empty.
+    hasPosition = any(word.lower() in jobTitle for word in FILTERS["position"]) if FILTERS["position"] else True
+    hasRole = any(word.lower() in jobTitle for word in FILTERS["role"]) if FILTERS["role"] else True
+    hasSpecialization = any(word.lower() in jobTitle for word in FILTERS["specialization"]) if FILTERS["specialization"] else True
+    hasQualification = any(word.lower() in jobQualifications for word in FILTERS["qualification"]) if FILTERS["qualification"] else True
+    hasIndustry = any(word.lower() in jobIndustry for word in FILTERS["industry"]) if FILTERS["industry"] else True
 
     return hasPosition and hasRole and hasSpecialization and hasQualification and hasIndustry
 
 initialTime = datetime.now(tz=timezone.utc)
 
-# If there are no users in the sheet, there's nothing to do.
-if not USERS:
-    print("No users found in sheet, exiting.")
-    exit()
-
-# Scrapes all jobs once.
+# Creates an enviornment to utilize browser capabilities.
 with sync_playwright() as p:
+    # Opens the browser.
     browser = p.chromium.launch()
+
+    # Creates a page within the browser.
     page = browser.new_page()
 
     jobs = []
@@ -71,9 +69,15 @@ with sync_playwright() as p:
         if "swan/mini-sites/list" in response.url:
             try:
                 data = response.json()
+
                 if "result" in data and "jobList" in data["result"]:
+
                     for job in data["result"]["jobList"]:
+                        if not withinTimeLimit(job["properties"]["postedAt"]):
+                            break
+
                         jobId = job["jobId"]
+
                         if jobId not in seenIds:
                             seenIds.add(jobId)
                             jobs.append({
@@ -86,14 +90,20 @@ with sync_playwright() as p:
                                 "qualifications": job["properties"]["qualifications"],
                                 "postedDate": job["postedAt"]
                             })
+
             except Exception as e:
                 print(f"Error: {e}")
 
+    # When we get a response from the page, we run the handleResponse function to fetch our data.
     page.on("response", handleResponse)
+
+    # We have the page go to a specific address.
     page.goto("https://jobright.ai/minisites-jobs/intern/us/swe")
+
+    # We'll yield until the page has fully loaded.
     page.wait_for_load_state("networkidle")
 
-    # Captures the initial jobs loaded on page load from the table.
+    # We capture the initial jobs loaded on page load from __NEXT_DATA__.
     data = page.evaluate("""() => JSON.parse(document.getElementById('__NEXT_DATA__').textContent)""")
     for job in data["props"]["pageProps"]["initialJobs"]:
         jobId = job["id"]
@@ -110,61 +120,31 @@ with sync_playwright() as p:
                 "postedDate": job["postedDate"]
             })
 
-    # Scrolls to load more rows.
+    # We fetch the table body and scroll through it to load more rows.
     tableBody = page.query_selector(".index_bodyViewport__3xQLm")
     for _ in range(10):
-        prevCount = len(seenIds)
         tableBody.evaluate("el => el.scrollTop += 3000")
-        page.wait_for_timeout(800)
+        page.wait_for_timeout(1500)
 
-        if len(seenIds) == prevCount:
-            print(f"No new jobs found after scroll, stopping early at {len(seenIds)} jobs.")
-            break
-
+    # We finally close our browser once we're done.
     browser.close()
 
-# Filters to only jobs within the time window.
-recentJobs = [job for job in jobs if withinTimeLimit(job["postedDate"])]
-print(f"Found {len(recentJobs)} jobs within time limit out of {len(jobs)} total.")
+newJobs = {}
 
-# Collect all unique jobs needed across all users and fetches real URLs once for all jobs, 
-# then filter per user.
-allNeededJobs = {}
-for job in recentJobs:
-    if job["company"] not in allNeededJobs:
-        allNeededJobs[job["company"]] = []
-    allNeededJobs[job["company"]].append((
-        job["title"], job["applyUrl"], job["location"],
-        job["workModel"], job["industry"], job["postedDate"]
-    ))
+# We go through all jobs in the rows and we append all 
+# jobs that are in the last 6 hours and pass through our filter.
+for job in jobs:
+    if validJob(job):
+        if job["company"] not in newJobs:
+            newJobs[job["company"]] = []
+        newJobs[job["company"]].append((job["title"], job["applyUrl"], job["location"], job["workModel"], job["industry"], job["postedDate"]))
 
-# Sorts jobs within each company by most recent first.
-for company in allNeededJobs:
-    allNeededJobs[company].sort(key=lambda x: x[5], reverse=True)
+# We sort the jobs within each company
+for company in newJobs:
+    newJobs[company].sort(key=lambda x: x[5], reverse=True)
 
-# Fetches all real application URLs once.
-print("Fetching real application URLs...")
-resolvedJobs = skipJobrightPage(allNeededJobs)
+# We'll then fetch the real links from all the jobright postings.
+#newJobs = skipJobrightPage(newJobs) SKIPPED UNTIL THERE IS A CLEANER METHOD
 
-# Filters and emails each user individually
-for email, filters in USERS.items():
-    print(f"\nProcessing user: {email}")
-
-    userJobs = {}
-    for company, listings in resolvedJobs.items():
-        for (title, url, location, workModel, industry, postDate) in listings:
-            job = {
-                "title": title,
-                "industry": industry,
-                "qualifications": "",  
-            }
-            if validJob(job, filters):
-                if company not in userJobs:
-                    userJobs[company] = []
-                userJobs[company].append((title, url, location, workModel, industry, postDate))
-
-    # Sorts companies by most recent job.
-    sortedUserJobs = dict(sorted(userJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)) if userJobs else {}
-
-    print(f"Sending {sum(len(v) for v in sortedUserJobs.values())} jobs to {email}")
-    sendEmail(sortedUserJobs, initialTime, email)
+# We then format and send our most to least recent sorted job list to an email.
+sendEmail(dict(sorted(newJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)), initialTime)
