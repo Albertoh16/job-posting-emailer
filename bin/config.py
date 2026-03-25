@@ -20,6 +20,7 @@ def fetchFilters(email):
     try:
         params = urllib.parse.urlencode({"action": "get", "email": email})
         url = f"{APPS_SCRIPT_URL}?{params}"
+        
         with urllib.request.urlopen(url, timeout=10) as res:
             data = json.loads(res.read().decode())
 

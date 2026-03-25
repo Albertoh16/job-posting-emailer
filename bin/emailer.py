@@ -26,8 +26,8 @@ def formatEmail(jobs):
 
     return result
 
-# We then send our formatted html to our email using the email in the env.
-def sendEmail(jobs, runTime):
+# We then send our formatted html to our email using the email passed in.
+def sendEmail(jobs, runTime, recipientEmail):
     # If there are no jobs found this interval, then we will let the user know in an email.
     if not jobs:
         body = """
@@ -47,7 +47,7 @@ def sendEmail(jobs, runTime):
 
     resend.Emails.send({
         "from": "Job Notifier <notifier@provysionstudios.com>",
-        "to": os.getenv("EMAIL"),
+        "to": recipientEmail,
         "subject": f"{dateStr} {timeRange} Job Postings",
         "html": body,
     })
