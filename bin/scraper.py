@@ -163,11 +163,11 @@ with sync_playwright() as p:
 
         resolvedJobs[company] = []
 
-        for (title, jobrightURL, location, workModel, industry, postDate) in listings:
+        for (title, jobrightURL, location, workModel, industry, postDate, qualifications) in listings:
             print(f"Processing: {title}")
-            
+
             realURL = getApplicationURL(jobrightPage, jobrightURL)
-            resolvedJobs[company].append((title, realURL, location, workModel, industry, postDate))
+            resolvedJobs[company].append((title, realURL, location, workModel, industry, postDate, qualifications))
 
     browser.close()
     print("Browser closed.")
@@ -183,7 +183,7 @@ def filterJobs(filters, resolvedJobs):
             if validJob(job, filters):
                 if company not in userJobs:
                     userJobs[company] = []
-                userJobs[company].append((title, url, location, workModel, industry, postDate))
+                userJobs[company].append((title, url, location, workModel, industry, postDate, qualifications))
 
     return dict(sorted(userJobs.items(), key=lambda x: max(j[5] for j in x[1]), reverse=True)) if userJobs else {}
 
