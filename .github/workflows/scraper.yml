@@ -12,7 +12,6 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    environment: Albert 
     steps:
       - uses: actions/checkout@v3
 
@@ -21,7 +20,7 @@ jobs:
         with:
           python-version: '3.11'
 
-     # We'll cache our dependanxies to stop our action from taking too long to complete.
+      # We'll cache our dependencies to stop our action from taking too long to complete.
       - name: Cache pip dependencies
         uses: actions/cache@v3
         with:
@@ -37,6 +36,13 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-playwright-${{ hashFiles('**/requirements.txt') }}
 
+      # We cache the Jobright session to skip login on repeat runs.
+      - name: Cache Jobright session
+        uses: actions/cache@v3
+        with:
+          path: bin/jobright_session.json
+          key: jobright-session
+
       - name: Install dependencies
         run: |
           pip install playwright python-dotenv resend
@@ -47,8 +53,8 @@ jobs:
 
       - name: Run scraper
         env:
-          EMAIL: ${{ secrets.EMAIL }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           JOBRIGHT_EMAIL: ${{ secrets.JOBRIGHT_EMAIL }}
           JOBRIGHT_PASSWORD: ${{ secrets.JOBRIGHT_PASSWORD }}
+          APPS_SCRIPT_URL: ${{ secrets.APPS_SCRIPT_URL }}
         run: python3 bin/scraper.py
