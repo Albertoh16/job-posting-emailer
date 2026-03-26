@@ -88,7 +88,7 @@ with sync_playwright() as p:
 
     scrapePage.on("response", handleResponse)
     scrapePage.goto("https://jobright.ai/minisites-jobs/intern/us/swe")
-    scrapePage.wait_for_load_state("networkidle")
+    scrapePage.wait_for_load_state("domcontentloaded")
 
     # Captures initial jobs from table
     data = scrapePage.evaluate("""() => JSON.parse(document.getElementById('__NEXT_DATA__').textContent)""")
