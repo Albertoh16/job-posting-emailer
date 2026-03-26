@@ -224,7 +224,7 @@
     </div>
     <button class="sign-out-btn" onclick="signOut()">Sign out</button>
   </div>
-
+  
   <!-- Filter -->
   <div id="form-panel" class="panel">
     <div class="form-header">
@@ -234,16 +234,17 @@
     <div class="loading-row" id="loading-row">
       Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
     </div>
+    <h3 class="hint" style="margin-top:1rem;color:red;">Separate multiple values with commas.</h3>
     <div class="form-body" id="form-body">
       <div class="section-label">Position</div>
       <div class="field-pair">
         <div class="field">
           <label>Position <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-position" placeholder="e.g. Intern, new grad" />
+          <input type="text" id="f-position" placeholder="Intern, new grad" />
         </div>
         <div class="field">
           <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-position" placeholder="e.g. Manager, Director" />
+          <input type="text" id="f-exclude-position" placeholder="Manager, Director" />
         </div>
       </div>
 
@@ -251,11 +252,11 @@
       <div class="field-pair">
         <div class="field">
           <label>Role <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-role" placeholder="e.g. Developer, Engineer, Admin, Editor" />
+          <input type="text" id="f-role" placeholder="Developer, Engineer, Admin, Editor" />
         </div>
         <div class="field">
           <label>Exclude Role <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-role" placeholder="e.g. IT, Manager" />
+          <input type="text" id="f-exclude-role" placeholder="IT, Manager" />
         </div>
       </div>
 
@@ -263,11 +264,11 @@
       <div class="field-pair">
         <div class="field">
           <label>Specialization <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-specialization" placeholder="e.g. Frontend, Backend, Robotics, Embedded" />
+          <input type="text" id="f-specialization" placeholder="Frontend, Backend, Robotics, Embedded" />
         </div>
         <div class="field">
           <label>Exclude Specialization <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-specialization" placeholder="e.g. QA, Data, Network" />
+          <input type="text" id="f-exclude-specialization" placeholder="QA, Data, Network" />
         </div>
       </div>
 
@@ -275,24 +276,23 @@
       <div class="field-pair">
         <div class="field">
           <label>Qualification <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-qualification" placeholder="e.g. Bachelor's, Master's, 2026" />
+          <input type="text" id="f-qualification" placeholder="Bachelor's, Master's, 2026" />
         </div>
         <div class="field">
           <label>Exclude Qualification <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-qualification" placeholder="e.g. PhD, 2027, sophmore" />
+          <input type="text" id="f-exclude-qualification" placeholder="PhD, 2027, sophmore" />
         </div>
       </div>
 
-      <h4 class="hint" style="margin-top:1rem;color:red;">Separate multiple values with commas.</h4>
       <div class="section-label">Industry</div>
       <div class="field-pair">
         <div class="field">
           <label>Industry <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-industry" placeholder="e.g. Tech, Finance" />
+          <input type="text" id="f-industry" placeholder="Tech, Finance" />
         </div>
         <div class="field">
           <label>Exclude Industry <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-industry" placeholder="e.g. Gaming" />
+          <input type="text" id="f-exclude-industry" placeholder="Gaming" />
         </div>
       </div>
     </div>
