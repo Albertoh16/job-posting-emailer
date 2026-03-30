@@ -2,6 +2,7 @@ name: Job Scraper
 
 # We'll run our scraper 4 times a day in 6 hour intervals.
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 5 * * *'  
     - cron: '0 11 * * *'
