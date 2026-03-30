@@ -9,7 +9,28 @@ resend.api_key = os.getenv("RESEND_API_KEY")
 
 # We format our job listing email using html.
 def formatEmail(jobs):
-    result = "<ul>"
+    # Collect all job URLs for the "Open All" button
+    allUrls = []
+    for listings in jobs.values():
+        for _, link, _, _, _, _, _ in listings:
+            if link:
+                allUrls.append(link)
+
+    urlsJson = str(allUrls).replace("'", '"')
+    openAllButton = f"""
+    <div style="margin-bottom: 24px;">
+        <button onclick='var urls={urlsJson}; urls.forEach(function(u){{ window.open(u,"_blank"); }})'
+            style="background-color:#4F46E5; color:white; padding:12px 24px; font-size:16px;
+                   border:none; border-radius:8px; cursor:pointer; font-weight:bold;">
+            &#128279; Open All {len(allUrls)} Application{'s' if len(allUrls) != 1 else ''}
+        </button>
+        <p style="color:#6B7280; font-size:13px; margin-top:8px;">
+            Your browser may ask for permission to open multiple tabs &mdash; click <b>Allow</b> when prompted.
+        </p>
+    </div>
+    """
+
+    result = openAllButton + "<ul>"
 
     for job in jobs.keys():
         # We take the industries to place next to the company, but if there are no industries listed, 
@@ -32,8 +53,8 @@ def sendEmail(jobs, runTime, recipientEmail):
     if not jobs:
         body = """
             <h2>No jobs have been found );</h2>
-            <p>There were no postings that matched your current filters. 
-            Try adjusting your <b>config.py</b> to potentially discover more!</p>
+            <p>There were no postings that matched your current filters.
+            Try adjusting your filters on <a href="https://albertoh16.github.io/job-posting-emailer">the site</a> to potentially discover more!</p>
         """
 
     # Otherwise, we'll format the jobs for the email.
