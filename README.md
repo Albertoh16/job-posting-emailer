@@ -25,7 +25,7 @@ Each email covers a rolling **~13-hour window** of new postings and includes:
 
 - Jobs grouped by company, with their industry noted
 - Each listing shows the **post time**, **job title**, **location**, and **work model** (remote/hybrid/on-site) as a clickable link straight to the application
-- An **"Open All Applications"** button at the top that launches every job in a new tab at once — your browser may ask permission to open multiple tabs; just click **Allow**
+- An **"Open All Applications"** button at the top that launches every job in a new tab at once, your browser may ask permission to open multiple tabs; just click **Allow**
 
 If no listings match your filters in a given interval, you'll receive a short email letting you know, with a link back to the site to adjust your preferences.
 
