@@ -493,12 +493,28 @@
     return data;
   }
 
+  function normalizeIntervalsValue(val) {
+    if (!val) return '';
+    // Google Sheets may return time values as Date objects via Apps Script
+    // Convert each piece to HH:MM string format
+    return String(val).split(',').map(s => {
+      s = s.trim();
+      // If it looks like a Date object string (contains "GMT" or is a Date)
+      if (s instanceof Date || /GMT|1899|1900/.test(s)) {
+        const d = new Date(s);
+        return String(d.getHours()).padStart(2,'0') + ':00';
+      }
+      // Already in HH:MM format
+      return s;
+    }).join(', ');
+  }
+
   function setFormData(row) {
     FIELDS.forEach((f, i) => {
       document.getElementById('f-' + f).value = row[i + 1] || '';
     });
-    // row[11] is the intervals column
-    setSelectedTimes(row[11] || '');
+    // row[11] is the intervals column — normalize in case GSheets returned a Date object
+    setSelectedTimes(normalizeIntervalsValue(row[11]));
   }
 
   function clearForm() {
