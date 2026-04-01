@@ -14,9 +14,33 @@ APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 
 # This makes a set based off of the items listed by the user in the spreadsheet.
 def parseCell(value):
-    if not value or not value.strip():
+    if not value or not str(value).strip():
         return set()
-    return {item.strip() for item in value.split(",") if item.strip()}
+    return {item.strip() for item in str(value).split(",") if item.strip()}
+
+# Google Sheets stores time-only cells as Date objects.
+def parseIntervals(value):
+    if not value:
+        return set()
+    result = set()
+    for item in str(value).split(","):
+        item = item.strip()
+        if not item:
+            continue
+        # Already in HH:MM format
+        if len(item) == 5 and item[2] == ":":
+            result.add(item)
+        # Looks like a serialized date/datetime from Sheets
+        elif "T" in item or "1899" in item or "1900" in item:
+            try:
+                from datetime import datetime as dt
+                parsed = dt.fromisoformat(item.replace("Z", "+00:00"))
+                result.add(f"{parsed.hour:02d}:00")
+            except Exception:
+                result.add(item)
+        else:
+            result.add(item)
+    return result
 
 # Converts a sheet row into a filters dict matching the scraper's expected format.
 def rowToFilters(row):
@@ -31,7 +55,7 @@ def rowToFilters(row):
         "exclude qualification":  parseCell(row[8]),
         "industry":               parseCell(row[9]),
         "exclude industry":       parseCell(row[10]),
-        "intervals":              parseCell(row[11]),
+        "intervals":              parseIntervals(row[11]),  
     }
 
 # Fetches all user rows from the Google Sheet.
@@ -40,7 +64,7 @@ def fetchAllUsers():
         params = urllib.parse.urlencode({"action": "getAll"})
         url = f"{APPS_SCRIPT_URL}?{params}"
 
-        with urllib.request.urlopen(url, timeout=50) as res:
+        with urllib.request.urlopen(url, timeout=10) as res:
             data = json.loads(res.read().decode())
 
         rows = data.get("rows", [])
