@@ -1,17 +1,13 @@
 from playwright.sync_api import sync_playwright
 from config import USERS
 from emailer import sendEmail
-from linkFetcher import loadSession, isLoggedIn, loginToJobright, getApplicationURL
 from filter import FilterJobs
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo
 import asyncio
 
-ET = ZoneInfo("America/New_York")
-
-initialTime    = datetime.now(tz=timezone.utc)
-initialTimeEDT = initialTime.astimezone(ET)
-currentHour    = initialTimeEDT.strftime("%H:00")
+initialTime = datetime.now(tz=timezone.utc)
+initialTimeEDT = initialTime - timedelta(hours=4)
+currentHour = initialTimeEDT.strftime("%H:00")
 
 if not USERS:
     print("No users found in sheet, exiting.")
@@ -32,13 +28,13 @@ print(f"[{currentHour}] {len(activeUsers)} user(s) scheduled: {list(activeUsers.
 
 # We take the user's list of times and we'll display times between the user's decided times to get emails.
 def getPreviousIntervalTime(intervals: set, currentTime: datetime) -> datetime:
-    currentTimeET = currentTime.astimezone(ET)
+    currentTimeEDT = currentTime - timedelta(hours=4)
 
     if not intervals or len(intervals) == 1:
         return currentTime - timedelta(hours=24)
 
     sortedTimes = sorted(intervals, key=lambda t: int(t.split(":")[0]))
-    currentHourStr = currentTimeET.strftime("%H:00")
+    currentHourStr = currentTimeEDT.strftime("%H:00")
 
     if currentHourStr not in sortedTimes:
         return currentTime - timedelta(hours=24)
@@ -49,12 +45,12 @@ def getPreviousIntervalTime(intervals: set, currentTime: datetime) -> datetime:
     currHour = int(currentHourStr.split(":")[0])
 
     if prevHour < currHour:
-        windowStart = currentTimeET.replace(hour=prevHour, minute=0, second=0, microsecond=0)
+        windowStart = currentTimeEDT.replace(hour=prevHour, minute=0, second=0, microsecond=0)
     else:
-        windowStart = (currentTimeET - timedelta(days=1)).replace(hour=prevHour, minute=0, second=0, microsecond=0)
+        windowStart = (currentTimeEDT - timedelta(days=1)).replace(hour=prevHour, minute=0, second=0, microsecond=0)
 
-    # Convert back to UTC for timestamp comparisons.
-    return windowStart.astimezone(timezone.utc)
+    # Convert back to UTC for timestamp comparisons
+    return windowStart + timedelta(hours=4)
 
 # Single browser runs everything.
 with sync_playwright() as p:
@@ -125,25 +121,12 @@ with sync_playwright() as p:
             print(f"No new jobs after scroll, stopping at {len(seenIds)} jobs.")
             break
 
-    # Logs into Jobright in a new tab.
-    jobrightPage = context.new_page()
-
-    sessionLoaded = loadSession(context)
-    
-    if sessionLoaded and isLoggedIn(jobrightPage):
-        print("Reusing cached session, skipping login.")
-        
-    else:
-        print("No valid session, logging in...")
-        loginToJobright(jobrightPage, context)
-
-    # Closes the scraping tab, no longer needed.
     scrapePage.close()
     print("Scraping tab closed.")
 
     allNeededJobs = {}
 
-    for job in jobs:  
+    for job in jobs:
         if job["company"] not in allNeededJobs:
             allNeededJobs[job["company"]] = []
 
@@ -157,18 +140,14 @@ with sync_playwright() as p:
         allNeededJobs[company].sort(key=lambda x: x[5], reverse=True)
 
     # Fetches real URLs using the logged-in tab.
-    print("Fetching real application URLs...")
+    print("Building job listings...")
     resolvedJobs = {}
 
     for company, listings in allNeededJobs.items():
-        print(f"\nProcessing company: {company} ({len(listings)} listings)")
-
         resolvedJobs[company] = []
 
         for (title, jobrightURL, location, workModel, industry, postDate, qualifications) in listings:
-            print(f"Processing: {title}")
-            realURL = getApplicationURL(jobrightPage, jobrightURL)
-            resolvedJobs[company].append((title, realURL, location, workModel, industry, postDate, qualifications))
+            resolvedJobs[company].append((title, jobrightURL, location, workModel, industry, postDate, qualifications))
 
     browser.close()
     print("Browser closed.")
