@@ -40,7 +40,7 @@ def fetchAllUsers():
         params = urllib.parse.urlencode({"action": "getAll"})
         url = f"{APPS_SCRIPT_URL}?{params}"
 
-        with urllib.request.urlopen(url, timeout=10) as res:
+        with urllib.request.urlopen(url, timeout=50) as res:
             data = json.loads(res.read().decode())
 
         rows = data.get("rows", [])
