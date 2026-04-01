@@ -1,8 +1,8 @@
 from sentence_transformers import util
 import torch
 
-# Model is loaded lazily — only when FilterJobs is first called.
-# This means importing filter.py (e.g. in Debug.py with SKIP_ML=True) has no cost.
+# Model is loaded lazily, only when FilterJobs is first called.
+# This means importing filter.py has no cost.
 MODEL = None
 
 def getModel():

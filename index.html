@@ -426,9 +426,9 @@
   ];
 
   // Generate all 24 hours as checkbox chips
+  // Values and labels are both in EDT. The backend also compares in EDT.
   const ALL_TIMES = [];
   for (let h = 0; h < 24; h++) {
-    const ampm = h < 12 ? 'am' : 'pm';
     const label = h === 0 ? '12am' : h < 12 ? `${h}am` : h === 12 ? '12pm' : `${h - 12}pm`;
     ALL_TIMES.push({ value: `${String(h).padStart(2,'0')}:00`, label });
   }
