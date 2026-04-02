@@ -48,6 +48,6 @@ def sendEmail(jobs, runTime, recipientEmail):
     resend.Emails.send({
         "from": "Job Notifier <notifier@provysionstudios.com>",
         "to": recipientEmail,
-        "subject": f"{dateStr} {timeRange} Job Postings",
+        "subject": f"{dateStr} Job Postings",
         "html": body,
     })
