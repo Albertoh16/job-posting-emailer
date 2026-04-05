@@ -32,14 +32,16 @@ print(f"[{currentHour}] {len(activeUsers)} user(s) scheduled: {list(activeUsers.
 def getPreviousIntervalTime(intervals: set, currentTime: datetime) -> datetime:
     currentTimeET = currentTime.astimezone(ET)
 
+    cutoff = currentTime - timedelta(hours=24)
+
     if not intervals or len(intervals) == 1:
-        return currentTime - timedelta(hours=24)
+        return cutoff
 
     sortedTimes = sorted(intervals, key=lambda t: int(t.split(":")[0]))
     currentHourStr = currentTimeET.strftime("%H:00")
 
     if currentHourStr not in sortedTimes:
-        return currentTime - timedelta(hours=24)
+        return cutoff
 
     idx = sortedTimes.index(currentHourStr)
     prevHourStr = sortedTimes[idx - 1]
@@ -51,9 +53,20 @@ def getPreviousIntervalTime(intervals: set, currentTime: datetime) -> datetime:
     else:
         windowStart = (currentTimeET - timedelta(days=1)).replace(hour=prevHour, minute=0, second=0, microsecond=0)
 
-    return windowStart.astimezone(timezone.utc)
+    windowStart = windowStart.astimezone(timezone.utc)
 
-# Single browser runs everything.
+    return max(windowStart, cutoff)
+
+windowStarts = {
+    email: getPreviousIntervalTime(filters.get("intervals", set()), initialTime)
+    for email, filters in activeUsers.items()
+}
+
+earliestStart = min(windowStarts.values())
+
+print(f"Scraping window: {earliestStart} -> {initialTime}")
+
+# Uses a single browser to run everything.
 with sync_playwright() as p:
     print("Launching Chromium...")
     browser = p.chromium.launch(headless=True)
@@ -113,13 +126,28 @@ with sync_playwright() as p:
     # Scrolls to load more rows, stopping early if no new jobs appear.
     tableBody = scrapePage.query_selector(".index_bodyViewport__3xQLm")
 
-    for _ in range(30):
+    # This is the number of consecutive stale jobs required before stopping.
+    STALE_STREAK_LIMIT = 5
+
+    for _ in range(50):
         prevCount = len(seenIds)
         tableBody.evaluate("el => el.scrollTop += 3000")
-        scrapePage.wait_for_timeout(800)
+        scrapePage.wait_for_timeout(600)
 
         if len(seenIds) == prevCount:
             print(f"No new jobs after scroll, stopping at {len(seenIds)} jobs.")
+            break
+
+        # Only stop once the last N loaded jobs are all within our window of time.
+        recentJobs = sorted(jobs, key=lambda j: j["postedDate"], reverse=True)
+
+        outOfWindow = sum(
+            1 for j in recentJobs[:STALE_STREAK_LIMIT]
+            if datetime.fromtimestamp(j["postedDate"] / 1000, tz=timezone.utc) < earliestStart
+        )
+
+        if outOfWindow >= STALE_STREAK_LIMIT:
+            print(f"Last {STALE_STREAK_LIMIT} jobs all outside window, stopping at {len(seenIds)} jobs.")
             break
 
     scrapePage.close()
@@ -152,15 +180,6 @@ with sync_playwright() as p:
 
     browser.close()
     print("Browser closed.")
-
-windowStarts = {
-    email: getPreviousIntervalTime(filters.get("intervals", set()), initialTime)
-    for email, filters in activeUsers.items()
-}
-
-earliestStart = min(windowStarts.values())
-
-print(f"Scraping window: {earliestStart} -> {initialTime}")
 
 # Filters and emails a single user, runs concurrently with other users.
 async def processUser(email, filters, resolvedJobs, initialTime):

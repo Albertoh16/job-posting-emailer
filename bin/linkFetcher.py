@@ -1,3 +1,5 @@
+# DEPRICATED UNTIL I FIND A FASTER SOLUTION TO FETCH OUR LINKS.
+
 import os
 import time
 import json

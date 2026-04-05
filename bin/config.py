@@ -1,5 +1,8 @@
 import ssl
 import certifi
+
+# This overrides the default SSL python has to the one provided by certifi
+# to prevent issues that might come from being run on a different OS.
 ssl._create_default_https_context = lambda: ssl.create_default_context(cafile=certifi.where())
 
 import os
@@ -16,34 +19,43 @@ APPS_SCRIPT_URL = os.getenv("APPS_SCRIPT_URL")
 def parseCell(value):
     if not value or not str(value).strip():
         return set()
+    
     return {item.strip() for item in str(value).split(",") if item.strip()}
 
 # Google Sheets stores time-only cells as fractional floats or Date objects.
 def parseIntervals(value):
     if not value and value != 0:
         return set()
+    
     # Sheets time-only cells arrive as a float fraction of a day.
     if isinstance(value, float) and 0 < value < 1:
         hour = round(value * 24)
         return {f"{hour:02d}:00"}
+    
     result = set()
+
     for item in str(value).split(","):
         item = item.strip()
+
         if not item:
             continue
-        # Already in HH:MM format
+        
         if len(item) == 5 and item[2] == ":":
             result.add(item)
+
         # Serialized date/datetime from Sheets
         elif "T" in item or "1899" in item or "1900" in item:
             try:
                 from datetime import datetime as dt
                 parsed = dt.fromisoformat(item.replace("Z", "+00:00"))
                 result.add(f"{parsed.hour:02d}:00")
+
             except Exception:
                 result.add(item)
+
         else:
             result.add(item)
+
     return result
 
 # Converts a sheet row into a filters dict matching the scraper's expected format.
@@ -79,20 +91,24 @@ def fetchAllUsers():
             return {}
 
         users = {}
+
         for row in rows:
             email = row[0].strip()
+
             if email:
                 users[email] = rowToFilters(row)
                 print(f"[config] Loaded filters for {email}")
                 print(f"[config DEBUG] {email} intervals raw={row[11]!r} type={type(row[11]).__name__} parsed={users[email]['intervals']!r}")
 
         print(f"[config] Total users loaded: {len(users)}")
+
         return users
 
     except Exception as e:
         print(f"Failed to fetch users from sheet: {e}")
         print("Falling back to empty users.")
+        
         return {}
 
-# All users and their filters, keyed by email.
+# All users and their filters, keyed by their emails.
 USERS = fetchAllUsers()
