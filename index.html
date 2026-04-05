@@ -228,6 +228,70 @@
       font-family: 'DM Mono', monospace; font-size: 0.7rem;
       color: var(--accent); min-height: 1.2em; margin-top: 0.3rem;
     }
+
+    /* Collapsible category sections */
+    .category-block { border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.65rem; overflow: hidden; }
+    .category-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.75rem 1rem; cursor: pointer; user-select: none;
+      background: var(--bg); transition: background 0.15s;
+    }
+    .category-header:hover { background: #16161a; }
+    .category-title {
+      font-family: 'DM Mono', monospace; font-size: 0.7rem;
+      text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .category-counts { display: flex; gap: 0.4rem; }
+    .count-pill {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      padding: 0.1rem 0.45rem; border-radius: 20px;
+    }
+    .count-include { background: var(--accent-dim); color: var(--accent); }
+    .count-exclude { background: var(--danger-dim); color: var(--danger); }
+    .chevron {
+      font-size: 0.65rem; color: var(--muted);
+      transition: transform 0.2s; display: inline-block;
+    }
+    .category-block.open .chevron { transform: rotate(180deg); }
+    .category-body {
+      display: none; padding: 0.75rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .category-block.open .category-body { display: block; }
+
+    /* Tag input */
+    .tag-field { display: flex; flex-direction: column; gap: 0.35rem; }
+    .tag-input-row {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; padding: 0.4rem 0.6rem;
+      min-height: 2.2rem; cursor: text; transition: border-color 0.2s;
+    }
+    .tag-input-row:focus-within { border-color: var(--accent); }
+    .tag-input-row.exclude-focus:focus-within { border-color: var(--danger); }
+    .tag-pill {
+      display: inline-flex; align-items: center; gap: 0.3rem;
+      padding: 0.15rem 0.5rem; border-radius: 20px;
+      font-size: 0.75rem; font-family: 'DM Mono', monospace;
+      line-height: 1.4;
+    }
+    .tag-pill.include { background: var(--accent-dim); color: var(--accent); }
+    .tag-pill.exclude { background: var(--danger-dim); color: var(--danger); }
+    .tag-remove {
+      background: none; border: none; cursor: pointer;
+      font-size: 0.75rem; line-height: 1; padding: 0;
+      opacity: 0.6; transition: opacity 0.15s;
+      color: inherit;
+    }
+    .tag-remove:hover { opacity: 1; }
+    .tag-text-input {
+      background: none; border: none; outline: none;
+      color: var(--text); font-size: 0.8rem;
+      font-family: 'DM Sans', sans-serif;
+      flex: 1; min-width: 80px; padding: 0.1rem 0;
+    }
+    .tag-text-input::placeholder { color: var(--muted); opacity: 0.6; }
   </style>
 </head>
 <body>
@@ -275,73 +339,172 @@
       Loading<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
     </div>
     <div class="form-body" id="form-body">
-      <p class="hint" style="font-size:1.1rem; color:red; margin-bottom:1rem; padding-bottom:1rem; border-bottom:1px solid var(--border);">Separate multiple values with commas.</p>
-      <div class="section-label">Position</div>
-      <div class="field-pair">
-        <div class="field">
-          <label>Position <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-position" placeholder="Intern, new grad" />
+
+      <!-- Position -->
+      <div class="category-block open" id="cat-position">
+        <div class="category-header" onclick="toggleCategory('cat-position')">
+          <span class="category-title">
+            Position
+            <span class="category-counts">
+              <span class="count-pill count-include" id="cnt-position">0 include</span>
+              <span class="count-pill count-exclude" id="cnt-exclude-position">0 exclude</span>
+            </span>
+          </span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="field">
-          <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-position" placeholder="Manager, Director" />
+        <div class="category-body">
+          <div class="field-pair">
+            <div class="tag-field">
+              <label>Position <span class="tag include-tag">include</span></label>
+              <div class="tag-input-row" id="row-position" onclick="focusTagInput('position')">
+                <input class="tag-text-input" id="f-position" placeholder="Intern…" data-field="position" />
+              </div>
+            </div>
+            <div class="tag-field">
+              <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
+              <div class="tag-input-row exclude-focus" id="row-exclude-position" onclick="focusTagInput('exclude-position')">
+                <input class="tag-text-input" id="f-exclude-position" placeholder="Senior, Manager…" data-field="exclude-position" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="section-label">Role</div>
-      <div class="field-pair">
-        <div class="field">
-          <label>Role <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-role" placeholder="Developer, Engineer, Admin, Editor" />
+      <!-- Role -->
+      <div class="category-block open" id="cat-role">
+        <div class="category-header" onclick="toggleCategory('cat-role')">
+          <span class="category-title">
+            Role
+            <span class="category-counts">
+              <span class="count-pill count-include" id="cnt-role">0 include</span>
+              <span class="count-pill count-exclude" id="cnt-exclude-role">0 exclude</span>
+            </span>
+          </span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="field">
-          <label>Exclude Role <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-role" placeholder="IT, Manager" />
-        </div>
-      </div>
-
-      <div class="section-label">Specialization</div>
-      <div class="field-pair">
-        <div class="field">
-          <label>Specialization <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-specialization" placeholder="Frontend, Backend, Robotics, Embedded" />
-        </div>
-        <div class="field">
-          <label>Exclude Specialization <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-specialization" placeholder="QA, Data, Network" />
-        </div>
-      </div>
-
-      <div class="section-label">Qualification</div>
-      <div class="field-pair">
-        <div class="field">
-          <label>Qualification <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-qualification" placeholder="Bachelor's, Master's, 2026" />
-        </div>
-        <div class="field">
-          <label>Exclude Qualification <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-qualification" placeholder="PhD, 2027, sophmore" />
+        <div class="category-body">
+          <div class="field-pair">
+            <div class="tag-field">
+              <label>Role <span class="tag include-tag">include</span></label>
+              <div class="tag-input-row" id="row-role" onclick="focusTagInput('role')">
+                <input class="tag-text-input" id="f-role" placeholder="Engineer, Developer…" data-field="role" />
+              </div>
+            </div>
+            <div class="tag-field">
+              <label>Exclude Role <span class="tag exclude-tag">exclude</span></label>
+              <div class="tag-input-row exclude-focus" id="row-exclude-role" onclick="focusTagInput('exclude-role')">
+                <input class="tag-text-input" id="f-exclude-role" placeholder="IT, Manager…" data-field="exclude-role" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="section-label">Industry</div>
-      <div class="field-pair">
-        <div class="field">
-          <label>Industry <span class="tag include-tag">include</span></label>
-          <input type="text" id="f-industry" placeholder="Tech, Finance" />
+      <!-- Specialization -->
+      <div class="category-block open" id="cat-specialization">
+        <div class="category-header" onclick="toggleCategory('cat-specialization')">
+          <span class="category-title">
+            Specialization
+            <span class="category-counts">
+              <span class="count-pill count-include" id="cnt-specialization">0 include</span>
+              <span class="count-pill count-exclude" id="cnt-exclude-specialization">0 exclude</span>
+            </span>
+          </span>
+          <span class="chevron">▼</span>
         </div>
-        <div class="field">
-          <label>Exclude Industry <span class="tag exclude-tag">exclude</span></label>
-          <input type="text" id="f-exclude-industry" placeholder="Gaming" />
+        <div class="category-body">
+          <div class="field-pair">
+            <div class="tag-field">
+              <label>Specialization <span class="tag include-tag">include</span></label>
+              <div class="tag-input-row" id="row-specialization" onclick="focusTagInput('specialization')">
+                <input class="tag-text-input" id="f-specialization" placeholder="Frontend, Backend…" data-field="specialization" />
+              </div>
+            </div>
+            <div class="tag-field">
+              <label>Exclude Specialization <span class="tag exclude-tag">exclude</span></label>
+              <div class="tag-input-row exclude-focus" id="row-exclude-specialization" onclick="focusTagInput('exclude-specialization')">
+                <input class="tag-text-input" id="f-exclude-specialization" placeholder="QA, Network…" data-field="exclude-specialization" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="section-label">Email Schedule</div>
-      <div class="time-picker-actions">
-        <button class="btn-tiny" onclick="selectAllTimes()">Select all</button>
-        <button class="btn-tiny" onclick="clearAllTimes()">Clear</button>
+
+      <!-- Qualification -->
+      <div class="category-block open" id="cat-qualification">
+        <div class="category-header" onclick="toggleCategory('cat-qualification')">
+          <span class="category-title">
+            Qualification
+            <span class="category-counts">
+              <span class="count-pill count-include" id="cnt-qualification">0 include</span>
+              <span class="count-pill count-exclude" id="cnt-exclude-qualification">0 exclude</span>
+            </span>
+          </span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="category-body">
+          <div class="field-pair">
+            <div class="tag-field">
+              <label>Qualification <span class="tag include-tag">include</span></label>
+              <div class="tag-input-row" id="row-qualification" onclick="focusTagInput('qualification')">
+                <input class="tag-text-input" id="f-qualification" placeholder="Bachelor's, 2026…" data-field="qualification" />
+              </div>
+            </div>
+            <div class="tag-field">
+              <label>Exclude Qualification <span class="tag exclude-tag">exclude</span></label>
+              <div class="tag-input-row exclude-focus" id="row-exclude-qualification" onclick="focusTagInput('exclude-qualification')">
+                <input class="tag-text-input" id="f-exclude-qualification" placeholder="PhD, Masters…" data-field="exclude-qualification" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="time-grid" id="time-grid"></div>
-      <div class="selected-times-hint" id="times-hint">No times selected — you won't receive emails.</div>
+
+      <!-- Industry -->
+      <div class="category-block open" id="cat-industry">
+        <div class="category-header" onclick="toggleCategory('cat-industry')">
+          <span class="category-title">
+            Industry
+            <span class="category-counts">
+              <span class="count-pill count-include" id="cnt-industry">0 include</span>
+              <span class="count-pill count-exclude" id="cnt-exclude-industry">0 exclude</span>
+            </span>
+          </span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="category-body">
+          <div class="field-pair">
+            <div class="tag-field">
+              <label>Industry <span class="tag include-tag">include</span></label>
+              <div class="tag-input-row" id="row-industry" onclick="focusTagInput('industry')">
+                <input class="tag-text-input" id="f-industry" placeholder="Tech, Finance…" data-field="industry" />
+              </div>
+            </div>
+            <div class="tag-field">
+              <label>Exclude Industry <span class="tag exclude-tag">exclude</span></label>
+              <div class="tag-input-row exclude-focus" id="row-exclude-industry" onclick="focusTagInput('exclude-industry')">
+                <input class="tag-text-input" id="f-exclude-industry" placeholder="Gaming…" data-field="exclude-industry" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Email Schedule -->
+      <div class="category-block open" id="cat-schedule">
+        <div class="category-header" onclick="toggleCategory('cat-schedule')">
+          <span class="category-title">Email Schedule</span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="category-body">
+          <div class="time-picker-actions">
+            <button class="btn-tiny" onclick="selectAllTimes()">Select all</button>
+            <button class="btn-tiny" onclick="clearAllTimes()">Clear</button>
+          </div>
+          <div class="time-grid" id="time-grid"></div>
+          <div class="selected-times-hint" id="times-hint">No times selected — you won't receive emails.</div>
+        </div>
+      </div>
 
     </div>
     <div class="form-footer">
@@ -356,12 +519,20 @@
 <script>
   const SUPABASE_URL    = "https://wftqtjuwfhlaiwkakptw.supabase.co";
   const SUPABASE_ANON   = "sb_publishable__JjwYt3ShAcGxYcFM7XpQQ_P1OzX_vw";
-  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6xtpvHLM1lj70TYz4-5jWlo3Yd9rr6R2GPIAse2Of4c5TMKk0T4teXQSCWnZEuo6J/exec";
+  const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+  const APPS_SCRIPT_URL = IS_LOCAL
+    ? null
+    : "https://script.google.com/macros/s/AKfycbx6xtpvHLM1lj70TYz4-5jWlo3Yd9rr6R2GPIAse2Of4c5TMKk0T4teXQSCWnZEuo6J/exec";
 
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
   let currentEmail = null;
+
+  if (IS_LOCAL) {
+    window.addEventListener('load', () => onLoggedIn('dev@local.com'));
+  }
 
   // Checks if returning from magic link click
   window.addEventListener('load', async () => {
@@ -424,6 +595,79 @@
     'qualification', 'exclude-qualification',
     'industry', 'exclude-industry'
   ];
+
+  // ── Tag system ──────────────────────────────────────────────────────────────
+
+  // Internal store: fieldId -> Set of tag strings
+  const tagStore = {};
+  FIELDS.forEach(f => tagStore[f] = new Set());
+
+  function focusTagInput(fieldId) {
+    document.getElementById('f-' + fieldId).focus();
+  }
+
+  function addTag(fieldId, value) {
+    const v = value.trim();
+    if (!v || tagStore[fieldId].has(v)) return;
+    tagStore[fieldId].add(v);
+    renderTags(fieldId);
+    updateCountPill(fieldId);
+  }
+
+  function removeTag(fieldId, value) {
+    tagStore[fieldId].delete(value);
+    renderTags(fieldId);
+    updateCountPill(fieldId);
+  }
+
+  function renderTags(fieldId) {
+    const row = document.getElementById('row-' + fieldId);
+    const input = document.getElementById('f-' + fieldId);
+    const isExclude = fieldId.startsWith('exclude-');
+    const pillClass = isExclude ? 'exclude' : 'include';
+
+    // Remove all existing pills (leave the input intact)
+    row.querySelectorAll('.tag-pill').forEach(p => p.remove());
+
+    // Re-insert pills before the input
+    tagStore[fieldId].forEach(val => {
+      const pill = document.createElement('span');
+      pill.className = `tag-pill ${pillClass}`;
+      pill.innerHTML = `${val}<button class="tag-remove" onclick="removeTag('${fieldId}', '${val.replace(/'/g, "\'")}')">✕</button>`;
+      row.insertBefore(pill, input);
+    });
+  }
+
+  function updateCountPill(fieldId) {
+    const el = document.getElementById('cnt-' + fieldId);
+    if (!el) return;
+    const count = tagStore[fieldId].size;
+    const isExclude = fieldId.startsWith('exclude-');
+    el.textContent = `${count} ${isExclude ? 'exclude' : 'include'}`;
+  }
+
+  // Wire up Enter key on all tag inputs
+  FIELDS.forEach(fieldId => {
+    const input = document.getElementById('f-' + fieldId);
+    if (!input) return;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const val = input.value.trim();
+        if (val) { addTag(fieldId, val); input.value = ''; }
+      }
+      // Backspace on empty input removes last tag
+      if (e.key === 'Backspace' && input.value === '') {
+        const tags = [...tagStore[fieldId]];
+        if (tags.length) removeTag(fieldId, tags[tags.length - 1]);
+      }
+    });
+  });
+
+  // ── Collapsible categories ──────────────────────────────────────────────────
+  function toggleCategory(id) {
+    document.getElementById(id).classList.toggle('open');
+  }
 
   // Generate all 24 hours as checkbox chips
   // Values and labels are both in EDT. The backend also compares in EDT.
@@ -488,7 +732,7 @@
 
   function getFormData() {
     const data = { email: currentEmail };
-    FIELDS.forEach(f => data[f] = document.getElementById('f-' + f).value.trim());
+    FIELDS.forEach(f => data[f] = [...tagStore[f]].join(', '));
     data['intervals'] = getSelectedTimes().join(', ');
     return data;
   }
@@ -511,14 +755,20 @@
 
   function setFormData(row) {
     FIELDS.forEach((f, i) => {
-      document.getElementById('f-' + f).value = row[i + 1] || '';
+      const raw = row[i + 1] || '';
+      tagStore[f] = new Set(raw.split(',').map(s => s.trim()).filter(Boolean));
+      renderTags(f);
+      updateCountPill(f);
     });
-    // row[11] is the intervals column — normalize in case GSheets returned a Date object
     setSelectedTimes(normalizeIntervalsValue(row[11]));
   }
 
   function clearForm() {
-    FIELDS.forEach(f => document.getElementById('f-' + f).value = '');
+    FIELDS.forEach(f => {
+      tagStore[f] = new Set();
+      renderTags(f);
+      updateCountPill(f);
+    });
     setSelectedTimes('');
   }
 
@@ -530,6 +780,7 @@
   }
 
   async function loadRow(autoCreate = false) {
+    if (IS_LOCAL) return;
     setLoading(true);
     try {
       const res = await fetch(`${APPS_SCRIPT_URL}?action=get&email=${encodeURIComponent(currentEmail)}`);
@@ -553,6 +804,7 @@
   // Uses no-cors since Apps Script doesn't support CORS headers.
   // This means we can't read the response, so we assume success if no error is thrown.
   async function saveRow() {
+    if (IS_LOCAL) return;
     document.getElementById('btn-save').disabled = true;
     try {
       await fetch(APPS_SCRIPT_URL, {
@@ -567,6 +819,7 @@
   }
 
   async function deleteRow() {
+    if (IS_LOCAL) return;
     if (!confirm('Delete all your preference data? This cannot be undone.')) return;
     document.getElementById('btn-delete').disabled = true;
     try {
