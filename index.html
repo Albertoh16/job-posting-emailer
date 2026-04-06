@@ -658,7 +658,7 @@
     'qualification', 'exclude-qualification',
     'industry', 'exclude-industry',
   ];
-  const JOB_TITLES_COL = 13;
+  const JOB_TITLES_COL = 12;
 
   // ── Tag system ──────────────────────────────────────────────────────────────
 
@@ -887,7 +887,7 @@
     });
     setSelectedTimes(normalizeIntervalsValue(row[9]));
     setSelectedDays(row[10] || '');
-    setSelectedWorkModels(row[12] || '');
+    setSelectedWorkModels(row[11] || '');
     const rawTitles = row[JOB_TITLES_COL] || '';
     tagStore['job-titles'] = new Set(rawTitles.split(',').map(s => s.trim()).filter(Boolean));
     renderTags('job-titles');
