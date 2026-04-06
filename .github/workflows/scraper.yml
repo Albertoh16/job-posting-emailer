@@ -35,7 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r requirements.txt --force-reinstall
           python -m playwright install-deps chromium
           python -m playwright install chromium
 
@@ -44,6 +44,7 @@ jobs:
           which python3
           which pip
           python3 -m pip list | grep jobspy
+          python3 -m pip show jobspy
           python3 -c "import jobspy; print(jobspy.__version__)"
 
       # ----- Scripting ------------------------------------------------------------------
