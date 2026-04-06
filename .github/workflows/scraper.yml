@@ -1,6 +1,6 @@
 name: Job Scraper
 
-# We'll run our scraper every hour of the day.
+# We'll run our scraper every hour.
 on:
   workflow_dispatch:
   schedule:
@@ -25,8 +25,6 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-v2-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
 
       # Caches our browsers so our actions run faster.
       - name: Cache Playwright browsers
