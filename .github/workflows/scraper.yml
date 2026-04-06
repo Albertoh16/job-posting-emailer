@@ -39,6 +39,9 @@ jobs:
           python -m playwright install-deps chromium
           python -m playwright install chromium
 
+      - name: Verify installed packages
+        run: pip list
+
       # ----- Scripting ------------------------------------------------------------------
 
       - name: Run scraper
