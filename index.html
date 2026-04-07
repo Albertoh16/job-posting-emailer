@@ -387,12 +387,12 @@
     <div class="form-body" id="form-body">
 
       <!-- Job Title -->
-      <div class="category-block open" id="cat-job-titles">
-        <div class="category-header" onclick="toggleCategory('cat-job-titles')">
+      <div class="category-block open" id="cat-job-title">
+        <div class="category-header" onclick="toggleCategory('cat-job-title')">
           <span class="category-title">
             Job Title
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-job-titles">0 titles</span>
+              <span class="count-pill count-include" id="cnt-job-title">0 titles</span>
             </span>
           </span>
           <span class="chevron">▼</span>
@@ -400,8 +400,8 @@
         <div class="category-body">
           <div class="tag-field">
             <label>Job Titles <span class="tag include-tag">search query</span></label>
-            <div class="tag-input-row" id="row-job-titles" onclick="focusTagInput('job-titles')">
-              <input class="tag-text-input" id="f-job-titles" placeholder="e.g. Software Engineer, press Enter to add" data-field="job-titles" />
+            <div class="tag-input-row" id="row-job-title" onclick="focusTagInput('job-title')">
+              <input class="tag-text-input" id="f-job-title" placeholder="e.g. Software Engineer, press Enter to add" data-field="job-title" />
             </div>
           </div>
           <p class="hint" style="margin-top:0.5rem">Each title is used as a separate job board search query.</p>
@@ -651,7 +651,7 @@
   // FIELDS drives the tag input system. Indices map to sheet cols via row[i+1]:
   // position(1) ex-position(2) specialization(3) ex-specialization(4)
   // qualification(5) ex-qualification(6) industry(7) ex-industry(8)
-  // job-titles is col 13 and is handled explicitly outside this loop.
+  // job-title is col 13 and is handled explicitly outside this loop.
   const FIELDS = [
     'position', 'exclude-position',
     'specialization', 'exclude-specialization',
@@ -707,12 +707,12 @@
     if (!el) return;
     const count = tagStore[fieldId].size;
     const isExclude = fieldId.startsWith('exclude-');
-    const label = fieldId === 'job-titles' ? 'titles' : (isExclude ? 'exclude' : 'include');
+    const label = fieldId === 'job-title' ? 'titles' : (isExclude ? 'exclude' : 'include');
     el.textContent = `${count} ${label}`;
   }
 
-  // Wire up Enter key on all tag inputs (FIELDS + job-titles which is handled separately)
-  [...FIELDS, 'job-titles'].forEach(fieldId => {
+  // Wire up Enter key on all tag inputs (FIELDS + job-title which is handled separately)
+  [...FIELDS, 'job-title'].forEach(fieldId => {
     const input = document.getElementById('f-' + fieldId);
     if (!input) return;
     input.addEventListener('keydown', e => {
@@ -858,7 +858,7 @@
     data['intervals']   = getSelectedTimes().join(', ');
     data['days']        = getSelectedDays().join(', ');
     data['work-model']  = getSelectedWorkModels().join(', ');
-    data['job-titles']  = [...tagStore['job-titles']].join(', ');
+    data['job-title']  = [...tagStore['job-title']].join(', ');
     return data;
   }
 
@@ -889,9 +889,9 @@
     setSelectedDays(row[10] || '');
     setSelectedWorkModels(row[11] || '');
     const rawTitles = row[JOB_TITLES_COL] || '';
-    tagStore['job-titles'] = new Set(rawTitles.split(',').map(s => s.trim()).filter(Boolean));
-    renderTags('job-titles');
-    updateCountPill('job-titles');
+    tagStore['job-title'] = new Set(rawTitles.split(',').map(s => s.trim()).filter(Boolean));
+    renderTags('job-title');
+    updateCountPill('job-title');
   }
 
   function clearForm() {
@@ -903,9 +903,9 @@
     setSelectedTimes('');
     setSelectedDays('');
     setSelectedWorkModels('');
-    tagStore['job-titles'] = new Set();
-    renderTags('job-titles');
-    updateCountPill('job-titles');
+    tagStore['job-title'] = new Set();
+    renderTags('job-title');
+    updateCountPill('job-title');
   }
 
   function setLoading(on) {
