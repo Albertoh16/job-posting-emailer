@@ -2,10 +2,9 @@ from playwright.sync_api import sync_playwright
 from config import USERS
 from emailer import sendEmail
 from filter import FilterJobs
-from jobSpyFetcher import fetchJobSpyJobs
 from datetime import datetime, timedelta, timezone
 import asyncio
-import concurrent.futures
+
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
 
@@ -71,195 +70,153 @@ earliestStart = min(windowStarts.values())
 
 print(f"Scraping window: {earliestStart} -> {initialTime}")
 
-# ── Scraping ──────────────────────────────────────────────────────────────────
-def scrapeJobright() -> dict:
-    """Scrapes Jobright via Playwright. Returns the same company-keyed dict format."""
+# Uses a single browser to run everything.
+with sync_playwright() as p:
+    print("Launching Chromium...")
+    browser = p.chromium.launch(headless=True)
+    context = browser.new_context()
+
+    # Scrapes jobs from the listing page.
+    scrapePage = context.new_page()
+
     jobs    = []
     seenIds = set()
 
-    with sync_playwright() as p:
-        print("[Jobright] Launching Chromium...")
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context()
+    def handleResponse(response):
+        if "swan/mini-sites/list" in response.url:
+            try:
+                data = response.json()
+                if "result" in data and "jobList" in data["result"]:
+                    for job in data["result"]["jobList"]:
+                        jobId = job["jobId"]
+                        if jobId not in seenIds:
+                            seenIds.add(jobId)
+                            jobs.append({
+                                "title":          job["properties"]["title"],
+                                "company":        job["properties"]["company"],
+                                "location":       job["properties"]["location"],
+                                "workModel":      job["properties"]["workModel"],
+                                "applyUrl":       f"https://jobright.ai/jobs/info/{jobId}",
+                                "industry":       job["properties"]["industry"],
+                                "qualifications": job["properties"]["qualifications"],
+                                "postedDate":     job["postedAt"]
+                            })
 
-        scrapePage = context.new_page()
+            except Exception as e:
+                print(f"Error: {e}")
 
-        def handleResponse(response):
-            if "swan/mini-sites/list" in response.url:
-                try:
-                    data = response.json()
-                    if "result" in data and "jobList" in data["result"]:
-                        for job in data["result"]["jobList"]:
-                            jobId = job["jobId"]
-                            if jobId not in seenIds:
-                                seenIds.add(jobId)
-                                jobs.append({
-                                    "title":          job["properties"]["title"],
-                                    "company":        job["properties"]["company"],
-                                    "location":       job["properties"]["location"],
-                                    "workModel":      job["properties"]["workModel"],
-                                    "applyUrl":       f"https://jobright.ai/jobs/info/{jobId}",
-                                    "industry":       job["properties"]["industry"],
-                                    "qualifications": job["properties"]["qualifications"],
-                                    "postedDate":     job["postedAt"]
-                                })
+    scrapePage.on("response", handleResponse)
+    scrapePage.goto("https://jobright.ai/minisites-jobs/intern/us/swe")
+    scrapePage.wait_for_load_state("domcontentloaded")
 
-                except Exception as e:
-                    print(f"[Jobright] Response parse error: {e}")
+    # Captures initial jobs from table.
+    data = scrapePage.evaluate("""() => JSON.parse(document.getElementById('__NEXT_DATA__').textContent)""")
 
-        scrapePage.on("response", handleResponse)
-        scrapePage.goto("https://jobright.ai/minisites-jobs/intern/us/swe")
-        scrapePage.wait_for_load_state("domcontentloaded")
+    for job in data["props"]["pageProps"]["initialJobs"]:
+        jobId = job["id"]
 
-        # Captures initial jobs from table.
-        data = scrapePage.evaluate("""() => JSON.parse(document.getElementById('__NEXT_DATA__').textContent)""")
+        if jobId not in seenIds:
+            seenIds.add(jobId)
+            
+            jobs.append({
+                "title":          job["title"],
+                "company":        job["company"],
+                "location":       job["location"],
+                "workModel":      job["workModel"],
+                "applyUrl":       job["applyUrl"],
+                "industry":       job["industry"],
+                "qualifications": job["qualifications"],
+                "postedDate":     job["postedDate"]
+            })
 
-        for job in data["props"]["pageProps"]["initialJobs"]:
-            jobId = job["id"]
+    # Scrolls to load more rows, stopping early if no new jobs appear.
+    tableBody = scrapePage.query_selector(".index_bodyViewport__3xQLm")
 
-            if jobId not in seenIds:
-                seenIds.add(jobId)
+    # This is the number of consecutive stale jobs required before stopping.
+    STALE_STREAK_LIMIT = 5
 
-                jobs.append({
-                    "title":          job["title"],
-                    "company":        job["company"],
-                    "location":       job["location"],
-                    "workModel":      job["workModel"],
-                    "applyUrl":       job["applyUrl"],
-                    "industry":       job["industry"],
-                    "qualifications": job["qualifications"],
-                    "postedDate":     job["postedDate"]
-                })
+    for _ in range(50):
+        prevCount = len(seenIds)
+        tableBody.evaluate("el => el.scrollTop += 3000")
+        scrapePage.wait_for_timeout(600)
 
-        tableBody = scrapePage.query_selector(".index_bodyViewport__3xQLm")
-        STALE_STREAK_LIMIT = 5
+        if len(seenIds) == prevCount:
+            print(f"No new jobs after scroll, stopping at {len(seenIds)} jobs.")
+            break
 
-        for _ in range(50):
-            prevCount = len(seenIds)
-            tableBody.evaluate("el => el.scrollTop += 3000")
-            scrapePage.wait_for_timeout(600)
+        # Only stop once the last N loaded jobs are all within our window of time.
+        recentJobs = sorted(jobs, key=lambda j: j["postedDate"], reverse=True)
 
-            if len(seenIds) == prevCount:
-                print(f"[Jobright] No new jobs after scroll, stopping at {len(seenIds)} jobs.")
-                break
+        outOfWindow = sum(
+            1 for j in recentJobs[:STALE_STREAK_LIMIT]
+            if datetime.fromtimestamp(j["postedDate"] / 1000, tz=timezone.utc) < earliestStart
+        )
 
-            recentJobs = sorted(jobs, key=lambda j: j["postedDate"], reverse=True)
+        if outOfWindow >= STALE_STREAK_LIMIT:
+            print(f"Last {STALE_STREAK_LIMIT} jobs all outside window, stopping at {len(seenIds)} jobs.")
+            break
 
-            outOfWindow = sum(
-                1 for j in recentJobs[:STALE_STREAK_LIMIT]
-                if datetime.fromtimestamp(j["postedDate"] / 1000, tz=timezone.utc) < earliestStart
-            )
+    scrapePage.close()
+    print("Scraping tab closed.")
 
-            if outOfWindow >= STALE_STREAK_LIMIT:
-                print(f"[Jobright] Last {STALE_STREAK_LIMIT} jobs outside window, stopping at {len(seenIds)} jobs.")
-                break
-
-        scrapePage.close()
-        browser.close()
-        print("[Jobright] Browser closed.")
-
-    # Restructure into company-keyed dict
-    allJobs: dict[str, list] = {}
+    allNeededJobs = {}
 
     for job in jobs:
-        company = job["company"]
-        if company not in allJobs:
-            allJobs[company] = []
-        allJobs[company].append((
+        if job["company"] not in allNeededJobs:
+            allNeededJobs[job["company"]] = []
+
+        allNeededJobs[job["company"]].append((
             job["title"], job["applyUrl"], job["location"],
             job["workModel"], job["industry"], job["postedDate"],
             job["qualifications"]
         ))
 
-    for company in allJobs:
-        allJobs[company].sort(key=lambda x: x[5], reverse=True)
+    for company in allNeededJobs:
+        allNeededJobs[company].sort(key=lambda x: x[5], reverse=True)
 
-    print(f"[Jobright] Collected {sum(len(v) for v in allJobs.values())} jobs across {len(allJobs)} companies.")
-    return allJobs
+    # Fetches real URLs using the logged-in tab.
+    print("Building job listings...")
+    resolvedJobs = {}
 
+    for company, listings in allNeededJobs.items():
+        resolvedJobs[company] = []
 
-def mergeJobSources(jobrightJobs: dict, jobspyJobs: dict) -> dict:
-    """
-    Merges JobSpy results into the Jobright results, deduplicating by
-    (company_lower, title_lower). Jobright entries are preferred when a
-    duplicate is found since they carry richer industry/qualifications data.
-    """
-    merged = {company: list(listings) for company, listings in jobrightJobs.items()}
+        for (title, jobrightURL, location, workModel, industry, postDate, qualifications) in listings:
+            resolvedJobs[company].append((title, jobrightURL, location, workModel, industry, postDate, qualifications))
 
-    # Build a lookup of (company_lower, title_lower) pairs already present
-    existing: set[tuple[str, str]] = set()
-    for company, listings in merged.items():
-        for listing in listings:
-            existing.add((company.lower(), listing[0].lower()))
+    browser.close()
+    print("Browser closed.")
 
-    added = 0
-
-    for company, listings in jobspyJobs.items():
-        for listing in listings:
-            key = (company.lower(), listing[0].lower())
-            if key in existing:
-                continue  # already have this from Jobright
-
-            # Find the matching company key in merged (case-insensitive)
-            matchedKey = next(
-                (k for k in merged if k.lower() == company.lower()), None
-            )
-
-            if matchedKey:
-                merged[matchedKey].append(listing)
-                merged[matchedKey].sort(key=lambda x: x[5], reverse=True)
-            else:
-                merged[company] = [listing]
-
-            existing.add(key)
-            added += 1
-
-    print(f"[Merge] Added {added} unique jobs from JobSpy. Total companies: {len(merged)}")
-    return merged
-
-# ── Run Scrapers ────────────────────────────────────────────
-print("Starting parallel scrape (Jobright + JobSpy)...")
-
-with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-    jobrightFuture = executor.submit(scrapeJobright)
-    jobspyFuture   = executor.submit(fetchJobSpyJobs, activeUsers, earliestStart)
-
-    jobrightJobs = jobrightFuture.result()
-    jobspyJobs   = jobspyFuture.result()
-
-resolvedJobs = mergeJobSources(jobrightJobs, jobspyJobs)
-
-totalJobs = sum(len(v) for v in resolvedJobs.values())
-print(f"\nTotal jobs after merge: {totalJobs} across {len(resolvedJobs)} companies.")
-
-# ── User filtering and emailing ──────────────────────────────────────────
-
+# Filters and emails a single user, runs concurrently with other users.
 async def processUser(email, filters, resolvedJobs, initialTime):
     windowStart = windowStarts[email]
 
     print(f"\n[{email}] Window: {windowStart} → {initialTime}")
 
+    # Trims the resolvedJobs to this user's window.
     userResolvedJobs = {
         company: [
             job for job in listings
             if datetime.fromtimestamp(job[5] / 1000, tz=timezone.utc) >= windowStart
         ]
+
         for company, listings in resolvedJobs.items()
     }
 
     userResolvedJobs = {k: v for k, v in userResolvedJobs.items() if v}
 
-    userJobs  = await asyncio.to_thread(FilterJobs, filters, userResolvedJobs)
+    userJobs = await asyncio.to_thread(FilterJobs, filters, userResolvedJobs)
     totalJobs = sum(len(v) for v in userJobs.values())
 
     print(f"[{email}] Sending {totalJobs} jobs.")
 
     await asyncio.to_thread(sendEmail, userJobs, initialTime, email)
 
+# Runs all users concurrently.
 async def processAllUsers(resolvedJobs, initialTime):
     tasks = [
         processUser(email, filters, resolvedJobs, initialTime)
-        for email, filters in activeUsers.items()
+        for email, filters in activeUsers.items() 
     ]
     await asyncio.gather(*tasks)
 
