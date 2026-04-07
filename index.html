@@ -408,33 +408,21 @@
         </div>
       </div>
 
-      <!-- Position -->
+      <!-- Hierarchy -->
       <div class="category-block open" id="cat-position">
         <div class="category-header" onclick="toggleCategory('cat-position')">
           <span class="category-title">
-            Position
+            Hierarchy
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-position">0 include</span>
-              <span class="count-pill count-exclude" id="cnt-exclude-position">0 exclude</span>
+              <span class="count-pill count-include" id="cnt-position">0 selected</span>
             </span>
           </span>
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <div class="field-pair">
-            <div class="tag-field">
-              <label>Position <span class="tag include-tag">include</span></label>
-              <div class="tag-input-row" id="row-position" onclick="focusTagInput('position')">
-                <input class="tag-text-input" id="f-position" placeholder="e.g. Intern, press Enter to add" data-field="position" />
-              </div>
-            </div>
-            <div class="tag-field">
-              <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
-              <div class="tag-input-row exclude-focus" id="row-exclude-position" onclick="focusTagInput('exclude-position')">
-                <input class="tag-text-input" id="f-exclude-position" placeholder="e.g. Senior, press Enter to add" data-field="exclude-position" />
-              </div>
-            </div>
-          </div>
+          <label style="display:block;margin-bottom:0.6rem">Only show jobs matching these seniority levels</label>
+          <div class="workmodel-row" id="hierarchy-row"></div>
+          <p class="hint">Leave all unselected to receive jobs of any level.</p>
         </div>
       </div>
 
@@ -653,7 +641,7 @@
   // qualification(5) ex-qualification(6) industry(7) ex-industry(8)
   // job-title is col 13 and is handled explicitly outside this loop.
   const FIELDS = [
-    'position', 'exclude-position',
+    // hierarchy handled separately (buttons, not tags)
     'specialization', 'exclude-specialization',
     'qualification', 'exclude-qualification',
     'industry', 'exclude-industry',
@@ -855,6 +843,8 @@
   function getFormData() {
     const data = { email: currentEmail };
     FIELDS.forEach(f => data[f] = [...tagStore[f]].join(', '));
+    data['position'] = getSelectedHierarchy().join(', ');
+    data['exclude-position'] = '';
     data['intervals']   = getSelectedTimes().join(', ');
     data['days']        = getSelectedDays().join(', ');
     data['work-model']  = getSelectedWorkModels().join(', ');
@@ -879,8 +869,11 @@
   }
 
   function setFormData(row) {
-    FIELDS.forEach((f, i) => {
-      const raw = row[i + 1] || '';
+    // row[1] = position (hierarchy), row[2] = exclude-position (unused)
+    setSelectedHierarchy(row[1] || '');
+    // remaining FIELDS start at index 2 in the row (specialization onwards)
+    ['specialization','exclude-specialization','qualification','exclude-qualification','industry','exclude-industry'].forEach((f, i) => {
+      const raw = row[i + 3] || '';
       tagStore[f] = new Set(raw.split(',').map(s => s.trim()).filter(Boolean));
       renderTags(f);
       updateCountPill(f);
@@ -895,6 +888,7 @@
   }
 
   function clearForm() {
+    setSelectedHierarchy('');
     FIELDS.forEach(f => {
       tagStore[f] = new Set();
       renderTags(f);
@@ -979,6 +973,49 @@
     setTimeout(() => t.style.display = 'none', 3000);
   }
 
+
+
+  // ── Hierarchy chips ─────────────────────────────────────────────────────────
+  const ALL_HIERARCHY = ['intern', 'co-op', 'new grad', 'junior', 'senior'];
+  const hierarchyRow = document.getElementById('hierarchy-row');
+
+  ALL_HIERARCHY.forEach(level => {
+    const id   = 'hier-' + level.replace(/[^a-z]/g, '-');
+    const wrap = document.createElement('div');
+    wrap.className = 'wm-chip';
+    wrap.innerHTML = `<input type="checkbox" id="${id}" value="${level}"><label for="${id}">${level}</label>`;
+    hierarchyRow.appendChild(wrap);
+  });
+
+  function getSelectedHierarchy() {
+    return ALL_HIERARCHY.filter(l => {
+      const id = 'hier-' + l.replace(/[^a-z]/g, '-');
+      return document.getElementById(id)?.checked;
+    });
+  }
+
+  function setSelectedHierarchy(val) {
+    ALL_HIERARCHY.forEach(l => {
+      const id = 'hier-' + l.replace(/[^a-z]/g, '-');
+      document.getElementById(id).checked = false;
+    });
+    if (!val) return;
+    val.split(',').map(s => s.trim().toLowerCase()).forEach(v => {
+      const id = 'hier-' + v.replace(/[^a-z]/g, '-');
+      const el = document.getElementById(id);
+      if (el) el.checked = true;
+    });
+    updateHierarchyPill();
+  }
+
+  function updateHierarchyPill() {
+    const el = document.getElementById('cnt-position');
+    if (!el) return;
+    const n = getSelectedHierarchy().length;
+    el.textContent = n + ' selected';
+  }
+
+  hierarchyRow.addEventListener('change', updateHierarchyPill);
 
   // ── Work Model chips ────────────────────────────────────────────────────────
   const ALL_WORK_MODELS = ['Remote', 'Hybrid', 'On-site'];
