@@ -123,7 +123,7 @@ def buildQueryTitles(activeUsers: dict) -> set:
     titles: set = set()
 
     for filters in activeUsers.values():
-        jobTitles = filters.get("job-titles", set())
+        jobTitles = filters.get("job-title", set())
 
         if jobTitles:
             for title in jobTitles:

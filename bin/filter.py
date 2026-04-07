@@ -28,7 +28,7 @@ ZSCORE_THRESHOLD = 0.5
 ZSCORE_MIN_SAMPLES = 5
 
 # Field groups for per-field query building.
-TITLE_KEYS = ["job-titles", "position", "specialization"]
+TITLE_KEYS = ["job-title", "position", "specialization"]
 QUAL_KEYS = ["qualification"]
 INDUSTRY_KEYS = ["industry"]
 
