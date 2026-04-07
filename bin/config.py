@@ -88,21 +88,35 @@ def parseJobTitles(value):
     
     return {item.strip() for item in str(value).split(",") if item.strip()}
 
+# Parses the hierarchy field (e.g. "intern, new grad, senior").
+def parseHierarchy(value):
+    if not value or not str(value).strip():
+        return set()
+
+    valid = {"intern", "co-op", "new grad", "junior", "senior"}
+    result = set()
+
+    for item in str(value).split(","):
+        item = item.strip().lower()
+        if item in valid:
+            result.add(item)
+
+    return result
+
 # Converts the sheet row into a filters map matching the scraper's expected format.
 def rowToFilters(row):
     return {
-        "position":               parseCell(row[1]),
-        "exclude position":       parseCell(row[2]),
-        "specialization":         parseCell(row[3]),
-        "exclude specialization": parseCell(row[4]),
-        "qualification":          parseCell(row[5]),
-        "exclude qualification":  parseCell(row[6]),
-        "industry":               parseCell(row[7]),
-        "exclude industry":       parseCell(row[8]),
-        "intervals":              parseIntervals(row[9]),
-        "days":                   parseDays(row[10]),
-        "work-model":             parseWorkModel(row[11]) if len(row) > 11 else set(),
-        "job-title":             parseJobTitles(row[12]) if len(row) > 12 else set(),
+        "hierarchy":              parseHierarchy(row[1]),
+        "specialization":         parseCell(row[2]),
+        "exclude specialization": parseCell(row[3]),
+        "qualification":          parseCell(row[4]),
+        "exclude qualification":  parseCell(row[5]),
+        "industry":               parseCell(row[6]),
+        "exclude industry":       parseCell(row[7]),
+        "intervals":              parseIntervals(row[8]),
+        "days":                   parseDays(row[9]),
+        "work-model":             parseWorkModel(row[10]) if len(row) > 10 else set(),
+        "job-title":              parseJobTitles(row[11]) if len(row) > 11 else set(),
     }
 
 # Fetches all user rows from the Google Sheet.

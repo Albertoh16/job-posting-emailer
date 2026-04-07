@@ -22,7 +22,7 @@ def getModel():
     return MODEL
 
 # How many standard deviations above the mean a job must score to pass.
-ZSCORE_THRESHOLD = 0.5
+ZSCORE_THRESHOLD = 0.7
 
 # Minimum number of jobs required to compute a meaningful z-score.
 ZSCORE_MIN_SAMPLES = 5
@@ -132,14 +132,37 @@ def matchesAny(keywords: set, target: str) -> str | None:
         
     return None
 
+# Keywords to match in job titles for each hierarchy level.
+HIERARCHY_KEYWORDS = {
+    "intern":    ["intern"],
+    "co-op":     ["co-op", "coop", "co op"],
+    "new grad":  ["new grad", "new graduate", "entry level", "early career"],
+    "junior":    ["junior", "jr.", "jr "],
+    "senior":    ["senior", "sr.", "sr "],
+}
+
+def hierarchyCheck(title: str, filters: dict) -> bool:
+    """Returns True if the title matches one of the user's selected hierarchy levels,
+    or if the user has set no hierarchy filter at all."""
+    allowed = filters.get("hierarchy", set())
+
+    if not allowed:
+        return True
+
+    titleLower = title.lower()
+
+    for level in allowed:
+        for keyword in HIERARCHY_KEYWORDS.get(level, []):
+            if keyword in titleLower:
+                return True
+
+    return False
+
 def excludeCheck(title: str, qualifications: str, industry: list, filters: dict) -> str | None:
     industryStr = ", ".join(industry) if industry else ""
     qualStr     = qualifications or ""
 
-    titleKeywords = (
-        filters.get("exclude position", set()) |
-        filters.get("exclude specialization", set())
-    )
+    titleKeywords = filters.get("exclude specialization", set())
 
     matched = matchesAny(titleKeywords, title)
 
@@ -213,6 +236,11 @@ def FilterJobs(filters: dict, resolvedJobs: dict) -> dict:
         # Work-model filter.
         if not workModelCheck(workModel, filters):
             print(f"[EXCLUDED] '{title}', work model '{workModel}' not in {filters.get('work-model')}")
+            continue
+
+        # Hierarchy filter.
+        if not hierarchyCheck(title, filters):
+            print(f"[EXCLUDED] '{title}', matches no selected hierarchy {filters.get('hierarchy')}")
             continue
 
         # Substring exclusion across title, qualifications, and industry.
