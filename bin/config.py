@@ -102,7 +102,7 @@ def rowToFilters(row):
         "intervals":              parseIntervals(row[9]),
         "days":                   parseDays(row[10]),
         "work-model":             parseWorkModel(row[11]) if len(row) > 11 else set(),
-        "job-titles":             parseJobTitles(row[12]) if len(row) > 12 else set(),
+        "job-title":             parseJobTitles(row[12]) if len(row) > 12 else set(),
     }
 
 # Fetches all user rows from the Google Sheet.
