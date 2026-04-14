@@ -88,7 +88,7 @@ def parseJobTitles(value):
     
     return {item.strip() for item in str(value).split(",") if item.strip()}
 
-# Parses the hierarchy field (e.g. "intern, new grad, senior").
+# Parses the hierarchy field.
 def parseHierarchy(value):
     if not value or not str(value).strip():
         return set()
@@ -143,7 +143,7 @@ def fetchAllUsers():
             if email:
                 users[email] = rowToFilters(row)
                 print(f"[config] Loaded filters for {email}")
-                print(f"[config DEBUG] {email} intervals raw={row[9]!r} type={type(row[9]).__name__} parsed={users[email]['intervals']!r}")
+
         print(f"[config] Total users loaded: {len(users)}")
 
         return users
