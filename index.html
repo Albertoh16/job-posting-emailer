@@ -151,7 +151,6 @@
       padding: 0.1rem 0.4rem; border-radius: 4px; font-family: 'DM Mono', monospace;
     }
     label .include-tag { background: var(--accent-dim); color: var(--accent); }
-    label .exclude-tag { background: var(--danger-dim); color: var(--danger); }
     input[type="text"] {
       background: var(--bg); border: 1px solid var(--border); border-radius: 7px;
       padding: 0.55rem 0.8rem; color: var(--text); font-size: 0.875rem;
@@ -294,7 +293,6 @@
       padding: 0.1rem 0.45rem; border-radius: 20px;
     }
     .count-include { background: var(--accent-dim); color: var(--accent); }
-    .count-exclude { background: var(--danger-dim); color: var(--danger); }
     .chevron {
       font-size: 0.65rem; color: var(--muted);
       transition: transform 0.2s; display: inline-block;
@@ -315,7 +313,6 @@
       min-height: 2.2rem; cursor: text; transition: border-color 0.2s;
     }
     .tag-input-row:focus-within { border-color: var(--accent); }
-    .tag-input-row.exclude-focus:focus-within { border-color: var(--danger); }
     .tag-pill {
       display: inline-flex; align-items: center; gap: 0.3rem;
       padding: 0.15rem 0.5rem; border-radius: 20px;
@@ -323,7 +320,6 @@
       line-height: 1.4;
     }
     .tag-pill.include { background: var(--accent-dim); color: var(--accent); }
-    .tag-pill.exclude { background: var(--danger-dim); color: var(--danger); }
     .tag-remove {
       background: none; border: none; cursor: pointer;
       font-size: 0.75rem; line-height: 1; padding: 0;
@@ -401,40 +397,28 @@
           <div class="tag-field">
             <label>Job Titles <span class="tag include-tag">search query</span></label>
             <div class="tag-input-row" id="row-job-title" onclick="focusTagInput('job-title')">
-              <input class="tag-text-input" id="f-job-title" placeholder="e.g. Software Engineer, press Enter to add" data-field="job-title" />
+              <input class="tag-text-input" id="f-job-title" placeholder="e.g. Software Engineer, Data Analyst, Product Manager" data-field="job-title" />
             </div>
+            <p class="hint" style="color:var(--danger)">Press Enter to create a tag</p>
           </div>
-          <p class="hint" style="margin-top:0.5rem">Each title is used as a separate job board search query.</p>
         </div>
       </div>
 
-      <!-- Position -->
+      <!-- Hierarchy -->
       <div class="category-block open" id="cat-position">
         <div class="category-header" onclick="toggleCategory('cat-position')">
           <span class="category-title">
-            Position
+            Hierarchy
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-position">0 include</span>
-              <span class="count-pill count-exclude" id="cnt-exclude-position">0 exclude</span>
+              <span class="count-pill count-include" id="cnt-position">0 selected</span>
             </span>
           </span>
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <div class="field-pair">
-            <div class="tag-field">
-              <label>Position <span class="tag include-tag">include</span></label>
-              <div class="tag-input-row" id="row-position" onclick="focusTagInput('position')">
-                <input class="tag-text-input" id="f-position" placeholder="e.g. Intern, press Enter to add" data-field="position" />
-              </div>
-            </div>
-            <div class="tag-field">
-              <label>Exclude Position <span class="tag exclude-tag">exclude</span></label>
-              <div class="tag-input-row exclude-focus" id="row-exclude-position" onclick="focusTagInput('exclude-position')">
-                <input class="tag-text-input" id="f-exclude-position" placeholder="e.g. Senior, press Enter to add" data-field="exclude-position" />
-              </div>
-            </div>
-          </div>
+          <label style="display:block;margin-bottom:0.6rem">Only show jobs matching these seniority levels</label>
+          <div class="workmodel-row" id="hierarchy-row"></div>
+          <p class="hint" style="color:var(--danger)">If no heirarchies are selected, you won't receive emails.</p>
         </div>
       </div>
 
@@ -445,26 +429,18 @@
           <span class="category-title">
             Specialization
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-specialization">0 include</span>
-              <span class="count-pill count-exclude" id="cnt-exclude-specialization">0 exclude</span>
+              <span class="count-pill count-include" id="cnt-specialization">0 included</span>
             </span>
           </span>
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <div class="field-pair">
-            <div class="tag-field">
-              <label>Specialization <span class="tag include-tag">include</span></label>
-              <div class="tag-input-row" id="row-specialization" onclick="focusTagInput('specialization')">
-                <input class="tag-text-input" id="f-specialization" placeholder="e.g. Frontend, press Enter to add" data-field="specialization" />
-              </div>
+          <div class="tag-field">
+            <label>Specialization <span class="tag include-tag">included</span></label>
+            <div class="tag-input-row" id="row-specialization" onclick="focusTagInput('specialization')">
+              <input class="tag-text-input" id="f-specialization" placeholder="e.g. Frontend, Backend, ML" data-field="specialization" />
             </div>
-            <div class="tag-field">
-              <label>Exclude Specialization <span class="tag exclude-tag">exclude</span></label>
-              <div class="tag-input-row exclude-focus" id="row-exclude-specialization" onclick="focusTagInput('exclude-specialization')">
-                <input class="tag-text-input" id="f-exclude-specialization" placeholder="e.g. QA, press Enter to add" data-field="exclude-specialization" />
-              </div>
-            </div>
+            <p class="hint" style="color:var(--danger)">Press Enter to create a tag</p>
           </div>
         </div>
       </div>
@@ -475,26 +451,18 @@
           <span class="category-title">
             Qualification
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-qualification">0 include</span>
-              <span class="count-pill count-exclude" id="cnt-exclude-qualification">0 exclude</span>
+              <span class="count-pill count-include" id="cnt-qualification">0 included</span>
             </span>
           </span>
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <div class="field-pair">
-            <div class="tag-field">
-              <label>Qualification <span class="tag include-tag">include</span></label>
-              <div class="tag-input-row" id="row-qualification" onclick="focusTagInput('qualification')">
-                <input class="tag-text-input" id="f-qualification" placeholder="e.g. Bachelor's, press Enter to add" data-field="qualification" />
-              </div>
+          <div class="tag-field">
+            <label>Qualification <span class="tag include-tag">included</span></label>
+            <div class="tag-input-row" id="row-qualification" onclick="focusTagInput('qualification')">
+              <input class="tag-text-input" id="f-qualification" placeholder="e.g. Python, React, Bachelor's" data-field="qualification" />
             </div>
-            <div class="tag-field">
-              <label>Exclude Qualification <span class="tag exclude-tag">exclude</span></label>
-              <div class="tag-input-row exclude-focus" id="row-exclude-qualification" onclick="focusTagInput('exclude-qualification')">
-                <input class="tag-text-input" id="f-exclude-qualification" placeholder="e.g. PhD, press Enter to add" data-field="exclude-qualification" />
-              </div>
-            </div>
+            <p class="hint" style="color:var(--danger)">Press Enter to create a tag</p>
           </div>
         </div>
       </div>
@@ -505,26 +473,18 @@
           <span class="category-title">
             Industry
             <span class="category-counts">
-              <span class="count-pill count-include" id="cnt-industry">0 include</span>
-              <span class="count-pill count-exclude" id="cnt-exclude-industry">0 exclude</span>
+              <span class="count-pill count-include" id="cnt-industry">0 included</span>
             </span>
           </span>
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <div class="field-pair">
-            <div class="tag-field">
-              <label>Industry <span class="tag include-tag">include</span></label>
-              <div class="tag-input-row" id="row-industry" onclick="focusTagInput('industry')">
-                <input class="tag-text-input" id="f-industry" placeholder="e.g. Fintech, press Enter to add" data-field="industry" />
-              </div>
+          <div class="tag-field">
+            <label>Industry <span class="tag include-tag">included</span></label>
+            <div class="tag-input-row" id="row-industry" onclick="focusTagInput('industry')">
+              <input class="tag-text-input" id="f-industry" placeholder="e.g. Fintech, Healthcare, Defense" data-field="industry" />
             </div>
-            <div class="tag-field">
-              <label>Exclude Industry <span class="tag exclude-tag">exclude</span></label>
-              <div class="tag-input-row exclude-focus" id="row-exclude-industry" onclick="focusTagInput('exclude-industry')">
-                <input class="tag-text-input" id="f-exclude-industry" placeholder="e.g. Gaming, press Enter to add" data-field="exclude-industry" />
-              </div>
-            </div>
+            <p class="hint" style="color:var(--danger)">Press Enter to create a tag</p>
           </div>
         </div>
       </div>
@@ -536,9 +496,8 @@
           <span class="chevron">▼</span>
         </div>
         <div class="category-body">
-          <label style="display:block;margin-bottom:0.6rem">Only show jobs with these work models</label>
           <div class="workmodel-row" id="workmodel-row"></div>
-          <p class="hint">Leave all unchecked to receive jobs of any work model.</p>
+          <p class="hint" style="color:var(--danger)">If no work models are selected, you won't receive emails.</p>
         </div>
       </div>
 
@@ -555,14 +514,14 @@
             <button class="btn-tiny" onclick="clearAllDays()">Clear</button>
           </div>
           <div class="day-grid" id="day-grid"></div>
-          <div class="selected-days-hint" id="days-hint">If no days are selected, you won't receive emails.</div>
+          <div class="selected-days-hint" id="days-hint" style="color:var(--danger)">If no days are selected, you won't receive emails.</div>
           <div class="section-label">Times</div>
           <div class="time-picker-actions">
             <button class="btn-tiny" onclick="selectAllTimes()">Select all</button>
             <button class="btn-tiny" onclick="clearAllTimes()">Clear</button>
           </div>
           <div class="time-grid" id="time-grid"></div>
-          <div class="selected-times-hint" id="times-hint">If no times are selected, you won't receive emails.</div>
+          <div class="selected-times-hint" id="times-hint" style="color:var(--danger)">If no times are selected, you won't receive emails.</div>
         </div>
       </div>
 
@@ -648,17 +607,16 @@
     loadRow(true); // true = auto-create row if new user
   }
 
-  // FIELDS drives the tag input system. Indices map to sheet cols via row[i+1]:
-  // position(1) ex-position(2) specialization(3) ex-specialization(4)
-  // qualification(5) ex-qualification(6) industry(7) ex-industry(8)
-  // job-title is col 13 and is handled explicitly outside this loop.
+  // FIELDS drives the tag input system.
+  // Sheet col order: [0]email [1]hierarchy [2]specialization [3]qualification [4]industry
+  //                  [5]intervals [6]days [7]work-model [8]job-title
   const FIELDS = [
-    'position', 'exclude-position',
-    'specialization', 'exclude-specialization',
-    'qualification', 'exclude-qualification',
-    'industry', 'exclude-industry',
+    // hierarchy handled separately (chips, not tags)
+    'specialization',
+    'qualification',
+    'industry',
   ];
-  const JOB_TITLES_COL = 12;
+  const JOB_TITLES_COL = 8;
 
   // ── Tag system ──────────────────────────────────────────────────────────────
 
@@ -687,8 +645,6 @@
   function renderTags(fieldId) {
     const row = document.getElementById('row-' + fieldId);
     const input = document.getElementById('f-' + fieldId);
-    const isExclude = fieldId.startsWith('exclude-');
-    const pillClass = isExclude ? 'exclude' : 'include';
 
     // Remove all existing pills (leave the input intact)
     row.querySelectorAll('.tag-pill').forEach(p => p.remove());
@@ -696,7 +652,7 @@
     // Re-insert pills before the input
     tagStore[fieldId].forEach(val => {
       const pill = document.createElement('span');
-      pill.className = `tag-pill ${pillClass}`;
+      pill.className = 'tag-pill include';
       pill.innerHTML = `${val}<button class="tag-remove" onclick="removeTag('${fieldId}', '${val.replace(/'/g, "\'")}')">✕</button>`;
       row.insertBefore(pill, input);
     });
@@ -706,8 +662,7 @@
     const el = document.getElementById('cnt-' + fieldId);
     if (!el) return;
     const count = tagStore[fieldId].size;
-    const isExclude = fieldId.startsWith('exclude-');
-    const label = fieldId === 'job-title' ? 'titles' : (isExclude ? 'exclude' : 'include');
+    const label = fieldId === 'job-title' ? 'titles' : 'include';
     el.textContent = `${count} ${label}`;
   }
 
@@ -855,9 +810,10 @@
   function getFormData() {
     const data = { email: currentEmail };
     FIELDS.forEach(f => data[f] = [...tagStore[f]].join(', '));
-    data['intervals']   = getSelectedTimes().join(', ');
-    data['days']        = getSelectedDays().join(', ');
-    data['work-model']  = getSelectedWorkModels().join(', ');
+    data['hierarchy']  = getSelectedHierarchy().join(', ');
+    data['intervals']  = getSelectedTimes().join(', ');
+    data['days']       = getSelectedDays().join(', ');
+    data['work-model'] = getSelectedWorkModels().join(', ');
     data['job-title']  = [...tagStore['job-title']].join(', ');
     return data;
   }
@@ -879,15 +835,18 @@
   }
 
   function setFormData(row) {
-    FIELDS.forEach((f, i) => {
-      const raw = row[i + 1] || '';
+    // [0]email [1]hierarchy [2]specialization [3]qualification [4]industry
+    // [5]intervals [6]days [7]work-model [8]job-title
+    setSelectedHierarchy(row[1] || '');
+    ['specialization', 'qualification', 'industry'].forEach((f, i) => {
+      const raw = row[i + 2] || '';
       tagStore[f] = new Set(raw.split(',').map(s => s.trim()).filter(Boolean));
       renderTags(f);
       updateCountPill(f);
     });
-    setSelectedTimes(normalizeIntervalsValue(row[9]));
-    setSelectedDays(row[10] || '');
-    setSelectedWorkModels(row[11] || '');
+    setSelectedTimes(normalizeIntervalsValue(row[5]));
+    setSelectedDays(row[6] || '');
+    setSelectedWorkModels(row[7] || '');
     const rawTitles = row[JOB_TITLES_COL] || '';
     tagStore['job-title'] = new Set(rawTitles.split(',').map(s => s.trim()).filter(Boolean));
     renderTags('job-title');
@@ -895,6 +854,7 @@
   }
 
   function clearForm() {
+    setSelectedHierarchy('');
     FIELDS.forEach(f => {
       tagStore[f] = new Set();
       renderTags(f);
@@ -979,6 +939,49 @@
     setTimeout(() => t.style.display = 'none', 3000);
   }
 
+
+
+  // ── Hierarchy chips ─────────────────────────────────────────────────────────
+  const ALL_HIERARCHY = ['intern', 'co-op', 'new grad', 'junior', 'senior'];
+  const hierarchyRow = document.getElementById('hierarchy-row');
+
+  ALL_HIERARCHY.forEach(level => {
+    const id   = 'hier-' + level.replace(/[^a-z]/g, '-');
+    const wrap = document.createElement('div');
+    wrap.className = 'wm-chip';
+    wrap.innerHTML = `<input type="checkbox" id="${id}" value="${level}"><label for="${id}">${level}</label>`;
+    hierarchyRow.appendChild(wrap);
+  });
+
+  function getSelectedHierarchy() {
+    return ALL_HIERARCHY.filter(l => {
+      const id = 'hier-' + l.replace(/[^a-z]/g, '-');
+      return document.getElementById(id)?.checked;
+    });
+  }
+
+  function setSelectedHierarchy(val) {
+    ALL_HIERARCHY.forEach(l => {
+      const id = 'hier-' + l.replace(/[^a-z]/g, '-');
+      document.getElementById(id).checked = false;
+    });
+    if (!val) return;
+    val.split(',').map(s => s.trim().toLowerCase()).forEach(v => {
+      const id = 'hier-' + v.replace(/[^a-z]/g, '-');
+      const el = document.getElementById(id);
+      if (el) el.checked = true;
+    });
+    updateHierarchyPill();
+  }
+
+  function updateHierarchyPill() {
+    const el = document.getElementById('cnt-position');
+    if (!el) return;
+    const n = getSelectedHierarchy().length;
+    el.textContent = n + ' selected';
+  }
+
+  hierarchyRow.addEventListener('change', updateHierarchyPill);
 
   // ── Work Model chips ────────────────────────────────────────────────────────
   const ALL_WORK_MODELS = ['Remote', 'Hybrid', 'On-site'];
