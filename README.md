@@ -1,54 +1,67 @@
 # Job Posting Emailer
 
-An automated service that scrapes recent software engineering internship listings from [Jobright.ai](https://jobright.ai), filters them based on each user's personal preferences, and delivers a personalized email digest every few hours, with one click to open every application at once.
+This is an automated service that basically scrapes recent software engineering internship listings, filters them based on your personal preferences, and then delivers a personalized email digest on a schedule you choose.
 
 ---
 
-## How to Sign Up
+## "Alright bro I heard enough, sign me up pls"
 
-1. Visit **[albertoh16.github.io/job-posting-emailer](https://albertoh16.github.io/job-posting-emailer)**
-2. Enter your email address and configure your filters:
-   - **Position**: job title keywords to include or exclude (e.g. `Software, Engineer`)
-   - **Role**: seniority or role type to include or exclude (e.g. `Intern, Junior`)
-   - **Specialization**: focus areas to include or exclude (e.g. `Frontend, ML`)
-   - **Qualification**: required skills to include or exclude (e.g. `Python, React`)
-   - **Industry**: sectors to include or exclude (e.g. `Fintech, Healthcare`)
-3. Submit the form, you'll start receiving emails automatically on the next scheduled run.
+1. Just visit **[albertoh16.github.io/job-posting-emailer](https://albertoh16.github.io/job-posting-emailer)**
+2. Enter your email and configure your filters, then submit and you'll start receiving emails on the next scheduled run.
 
-> **Tip:** Leave a filter field blank to match everything in that category. The more specific your filters, the more targeted your results.
+---
+
+## Filters
+
+Each filter field accepts a list of keyword tags. Leave a field blank to match everything in that category.
+
+| Filter | Description | Example |
+|---|---|---|
+| **Hierarchy** | Seniority or role type | `Intern, Co-op` |
+| **Specialization** | Focus areas (matched against job title) | `Frontend, ML` |
+| **Qualification** | Required skills (matched against job qualifications) | `Python, React` |
+| **Industry** | Company sectors | `Fintech, Healthcare` |
+| **Work Model** | Remote, Hybrid, or On-site | `Remote, Hybrid` |
+| **Job Title** | Keywords used to semantically rank results | `Software Engineer` |
+| **Intervals** | Times of day to receive emails (24h format) | `09:00, 17:00` |
+| **Days** | Days of the week to receive emails | `Monday, Wednesday, Friday` |
 
 ---
 
 ## What You'll Receive
 
-Each email covers a rolling **~13-hour window** of new postings and includes:
+Each email covers the window of new postings since your last delivery and includes:
 
-- Jobs grouped by company, with their industry noted
-- Each listing shows the **post time**, **job title**, **location**, and **work model** (remote/hybrid/on-site) as a clickable link straight to the application
-- An **"Open All Applications"** button at the top that launches every job in a new tab at once, your browser may ask permission to open multiple tabs; just click **Allow**
+- Jobs grouped by company, with industry noted
+- Each listing shows the **post time**, **job title**, **location**, and **work model** as a clickable link straight to the application
 
-If no listings match your filters in a given interval, you'll receive a short email letting you know, with a link back to the site to adjust your preferences.
+If no listings match your filters in a given interval, you'll get a short email letting you know, with a link back to the site to adjust your preferences.
 
 ---
 
 ## How It Works
 
-The service runs on a scheduled interval and executes the following pipeline:
+### Scraping
+Two job sources are scraped in parallel every time the service runs:
 
-### 1. Scraping: `scraper.py`
-A headless Chromium browser (via **Playwright**) navigates to Jobright's public SWE internship listing page. It intercepts network responses to capture job data as it loads, then scrolls the listing table to paginate and collect additional results. Jobs posted outside the last 13 hours are discarded immediately.
+- **Jobright**: A headless Chromium browser (using Playwright) navigates Jobright's public SWE internship listing page, intercepts network responses to capture job data as it loads, and scrolls the table to collect additional results.
+- **JobSpy**: Queries Indeed, LinkedIn, ZipRecruiter, Google, and Glassdoor concurrently using one search per unique job title across all active users.
 
-### 2. Authentication: `linkFetcher.py`
-The scraper opens a second browser tab and logs into Jobright using stored credentials. Sessions are cached to a local file so repeat logins are avoided. Once authenticated, each job's Jobright URL is visited and the real external application URL is resolved by clicking the "Apply" button and capturing where it redirects.
+Results from both sources are merged and deduplicated by company + title. Jobright listings are preferred when duplicates exist since they carry richer industry and qualifications data.
 
-### 3. User Configuration: `config.py`
-User emails and their filter preferences are fetched from a **Google Sheet** via a **Google Apps Script** web endpoint. Each row maps to one recipient. Filters are parsed into structured sets used to match against job titles, qualifications, and industries.
+### User Configuration
+User emails and filter preferences are stored in a Google Sheet managed via a Google Apps Script web endpoint. Each row maps to one recipient. The scraper fetches all rows at startup and parses them into structured filter sets.
 
-### 4. Filtering: `scraper.py`
-For each user, the full resolved job list is run through their filter set. Jobs must match all active include filters (position, role, specialization, qualification, industry) and must not match any exclude filters. Each user gets a completely independent filtered result.
+### Filtering
+For each user, the merged job list is run through their filters in two stages:
 
-### 5. Emailing: `emailer.py`
-Filtered results are formatted into an HTML email and sent via **Resend**. All users are processed concurrently using `asyncio`. The email includes an "Open All" button, company-grouped listings with timestamps, and direct links to each application.
+1. **Hard filters**: work model, hierarchy level, specialization (title), qualification, and industry must all match if set.
+2. **ML title scoring**: if the user has set job title keywords, job titles are encoded using a sentence-transformer model (`all-MiniLM-L6-v2`) and scored against the query. Only jobs scoring above a dynamic z-score threshold are kept.
+
+Each user gets a completely independent filtered result.
+
+### Emailing
+Filtered results are formatted into an HTML email and sent via Resend. All users are processed concurrently using `asyncio`.
 
 ---
 
@@ -57,22 +70,15 @@ Filtered results are formatted into an HTML email and sent via **Resend**. All u
 | Layer | Technology |
 |---|---|
 | Scraping & Automation | [Playwright](https://playwright.dev/python/) (headless Chromium) |
+| Additional Job Sources | [JobSpy](https://github.com/Bunsly/JobSpy) |
+| ML Filtering | [sentence-transformers](https://www.sbert.net/) (`all-MiniLM-L6-v2`) |
 | Email Delivery | [Resend](https://resend.com) |
 | User Data / Filters | Google Sheets + Google Apps Script |
-| Scheduling | Cron (or any task scheduler) |
-| Runtime | Python 3.14 |
-| Concurrency | `asyncio` + `asyncio.to_thread` |
+| Scheduling | GitHub Actions (cron, runs hourly) |
+| Runtime | Python 3.11 |
+| Concurrency | `asyncio` + `concurrent.futures` |
 | Environment Config | `python-dotenv` |
 
 ---
 
-## Environment Variables
-
-The following variables must be set in a `.env` file at the project root:
-
-```
-JOBRIGHT_EMAIL=your_jobright_email
-JOBRIGHT_PASSWORD=your_jobright_password
-RESEND_API_KEY=your_resend_api_key
-APPS_SCRIPT_URL=your_google_apps_script_url
-```
+Alright tiger, now get out there and apply!
